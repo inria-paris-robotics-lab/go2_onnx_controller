@@ -17,7 +17,7 @@ def main():
     print(f'Output name: {output_name}')
     print(f'Output shape: {output_shape}')
 
-    input_data = np.random.rand(*input_shape).astype(np.float32)
+    input_data = np.ones(input_shape, dtype=np.float32) * 2
     print(input_data)
 
     start = time.time() 
