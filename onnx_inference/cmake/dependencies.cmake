@@ -9,6 +9,7 @@ macro(onnx_dependencies)
             URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
         )
         set(LIBRARY_NAME "libonnxruntime.so")
+        file(GLOB ONNXRUNTIME_LIBS "${onnxruntime_SOURCE_DIR}/lib/libonnxruntime.so*")
     elseif(APPLE)
         FetchContent_Declare(
             onnxruntime
@@ -16,6 +17,7 @@ macro(onnx_dependencies)
             URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-osx-universal2-1.20.1.tgz
         )
         set(LIBRARY_NAME "libonnxruntime.dylib")
+        file(GLOB ONNXRUNTIME_LIBS "${onnxruntime_SOURCE_DIR}/lib/libonnxruntime.*.dylib")
     endif()
 
     FetchContent_MakeAvailable(onnxruntime)
@@ -28,6 +30,5 @@ macro(onnx_dependencies)
         INTERFACE_INCLUDE_DIRECTORIES ${onnxruntime_SOURCE_DIR}/include/
     )
     # Install the library
-    file(GLOB ONNXRUNTIME_LIBS "${onnxruntime_SOURCE_DIR}/lib/libonnxruntime.*")
     install(FILES ${ONNXRUNTIME_LIBS} DESTINATION lib)
 endmacro()
