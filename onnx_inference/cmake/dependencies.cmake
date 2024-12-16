@@ -2,11 +2,19 @@
 macro(onnx_dependencies)
     include(FetchContent)
 
-    FetchContent_Declare(
-        onnxruntime
-        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-        URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
-    )
+    if(UNIX AND NOT APPLE)
+        FetchContent_Declare(
+            onnxruntime
+            DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+            URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
+        )
+    elseif(APPLE)
+        FetchContent_Declare(
+            onnxruntime
+            DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+            URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-osx-universal2-1.20.1.tgz
+        )
+    endif()
 
     FetchContent_MakeAvailable(onnxruntime)
 
