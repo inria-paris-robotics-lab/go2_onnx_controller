@@ -39,3 +39,4 @@ install(TARGETS onnx-inference
 
 # Install the header files
 install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY data/ DESTINATION data)
