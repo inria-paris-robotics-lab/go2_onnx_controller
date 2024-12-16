@@ -4,8 +4,8 @@ macro(onnx_dependencies)
 
     FetchContent_Declare(
         onnxruntime
-        URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
         DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+        URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
     )
 
     FetchContent_MakeAvailable(onnxruntime)
