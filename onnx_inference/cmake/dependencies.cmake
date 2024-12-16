@@ -17,4 +17,7 @@ macro(onnx_dependencies)
         IMPORTED_LOCATION ${onnxruntime_SOURCE_DIR}/lib/libonnxruntime.so
         INTERFACE_INCLUDE_DIRECTORIES ${onnxruntime_SOURCE_DIR}/include/
     )
+    # Install the library
+    file(GLOB ONNXRUNTIME_LIBS "${onnxruntime_SOURCE_DIR}/lib/libonnxruntime.so*")
+    install(FILES ${ONNXRUNTIME_LIBS} DESTINATION lib)
 endmacro()

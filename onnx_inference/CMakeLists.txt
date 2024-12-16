@@ -14,6 +14,10 @@ set(CMAKE_CXX_STANDARD 17)
 include(cmake/dependencies.cmake)
 onnx_dependencies()
 
+# Set the RPATH to the lib directory, so that the shared library can be found
+# it is necessary to set the RPATH before building the targets
+list(APPEND CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
+
 add_library(onnx-actor SHARED src/cpp/onnx_actor.cpp)
 target_include_directories(onnx-actor PUBLIC include)
 target_link_libraries(onnx-actor onnxruntime)
@@ -23,3 +27,15 @@ target_link_libraries(onnx-inference onnx-actor)
 
 # Make data files available in the build directory
 file(COPY data DESTINATION ${CMAKE_BINARY_DIR})
+
+# Install the shared library and the executable
+install(TARGETS onnx-actor
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
+
+install(TARGETS onnx-inference
+        RUNTIME DESTINATION bin)
+
+# Install the header files
+install(DIRECTORY include/ DESTINATION include)
