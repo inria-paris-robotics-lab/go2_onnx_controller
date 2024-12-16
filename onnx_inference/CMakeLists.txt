@@ -39,4 +39,4 @@ install(TARGETS onnx-inference
 
 # Install the header files
 install(DIRECTORY include/ DESTINATION include)
-install(DIRECTORY data/ DESTINATION data)
+install(FILES ${CMAKE_BINARY_DIR}/data/model.onnx DESTINATION ~/.local/share/.onnx-actor/)

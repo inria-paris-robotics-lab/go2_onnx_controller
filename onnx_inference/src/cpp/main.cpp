@@ -1,15 +1,22 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <cstdlib>
 
 #include "onnx_actor.hpp"
 
 // constexpr unsigned int inputSize = 45;
 
 int main() {
-  std::cout << "Hello, World!" << std::endl;
   Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
-  std::string model_path = "data/model.onnx";
+  std::string home = std::getenv("HOME");
+
+  if (home.empty()) {
+    std::cerr << "Error: HOME environment variable not set." << std::endl;
+    return 1;
+  }
+
+  std::string model_path = home + "/.local/share/.onnx-actor/model.onnx";
 
   ONNXActor actor(model_path);
   actor.print_model_info();
