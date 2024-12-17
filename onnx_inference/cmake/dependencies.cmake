@@ -39,4 +39,7 @@ macro(onnx_dependencies)
     )
     # Install the library
     install(FILES ${ONNXRUNTIME_LIBS} DESTINATION lib)
+
+    # Install the headers
+    install(DIRECTORY ${onnxruntime_SOURCE_DIR}/include/ DESTINATION include)
 endmacro()
