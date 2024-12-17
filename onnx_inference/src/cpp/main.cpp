@@ -24,7 +24,7 @@ int main() {
   std::vector<float> observation(45, 2.0);
   std::vector<float> action(12, 0.0);
 
-  actor.update_observation(observation);
+  actor.observe(observation);
   actor.act(action);
 
   // Print the action

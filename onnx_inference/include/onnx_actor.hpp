@@ -36,7 +36,7 @@ class ONNXActor {
    * @brief Update the internal observation buffer.
    * @param observation A vector of floats representing the observation.
    */
-  void update_observation(const std::vector<float>& observation);
+  void observe(const std::vector<float>& observation);
 
   /**
    * @brief Print information about the loaded ONNX model.
