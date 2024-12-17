@@ -37,7 +37,7 @@ ONNXActor::ONNXActor(const std::string& model_path, OrtLoggingLevel log_level)
       output_shape_.size()));
 };
 
-void ONNXActor::update_observation(const std::vector<float>& obs) {
+void ONNXActor::observe(const std::vector<float>& obs) {
   // Check if observation size matches input shape
   if (obs.size() != input_shape_.at(1)) {
     throw std::runtime_error(
