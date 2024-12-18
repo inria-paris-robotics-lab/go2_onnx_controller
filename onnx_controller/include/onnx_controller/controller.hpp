@@ -4,7 +4,6 @@
 
 #include "onnx_actor.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
 
@@ -35,16 +34,16 @@ class ONNXController : public rclcpp::Node {
 
  private:
   void prepare_observation(std::vector<float>& observation);
-
+  void initialize_command();
+  void prepare_command();
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr subscription_;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+  rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr publisher_;
   size_t count_;
 
-  unitree_go::msg::LowState::SharedPtr last_msg_;
-  unitree_go::msg::LowCmd::SharedPtr last_cmd_;
+  unitree_go::msg::LowCmd::SharedPtr cmd_;
 
-  std::shared_ptr<ONNXActor> actor_;
+  std::unique_ptr<ONNXActor> actor_;
 
   // Index conversion
   const std::array<uint8_t, 12> ros_to_urdf_idx_ = get_ros_to_urdf_idx();
@@ -53,7 +52,7 @@ class ONNXController : public rclcpp::Node {
   std::array<float, 3> imu_lin_acc_;  ///< Linear acceleration
   std::array<float, 3> imu_ang_vel_;  ///< Angular velocity
 
-  std::array<float, 3> vel_cmd_{0, 0, 0};  ///< Linear velocity command
+  std::array<float, 3> vel_cmd_{0.0, 0, 0};  ///< Linear velocity command
 
   // Proprioceptive state
   std::array<float, 12> q_;   ///< Joint positions
@@ -62,5 +61,6 @@ class ONNXController : public rclcpp::Node {
   // Control state
   std::array<float, 12> action_;  ///< Action to
 
-  // Observation state
+  // Initial pose
+  std::array<float, 12> q0_(0.0);
 };
