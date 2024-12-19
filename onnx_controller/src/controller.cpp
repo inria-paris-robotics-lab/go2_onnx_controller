@@ -74,7 +74,7 @@ void ONNXController::initialize_command(){
     m_cmd_.dq = 0;
     // c.f. 
     // https://github.com/isaac-sim/IsaacLab/blob/874b7b628d501640399a241854c83262c5794a4b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/unitree.py#L167
-    m_cmd_.kp = 25.0;
+    m_cmd_.kp = 15.0;
     m_cmd_.kd = 0.5;
     /////// c.f.
     m_cmd_.tau = 0;
@@ -104,11 +104,11 @@ void ONNXController::consume(const unitree_go::msg::LowState::SharedPtr msg) {
   }
 
   // Ingest IMU data
-  imu_lin_acc_ = {msg->imu_state.accelerometer[0],
-                  msg->imu_state.accelerometer[1],
-                  msg->imu_state.accelerometer[2]};
-  imu_ang_vel_ = {msg->imu_state.gyroscope[0], msg->imu_state.gyroscope[1],
-                  msg->imu_state.gyroscope[2]};
+  imu_lin_acc_ = {msg->imu_state.accelerometer[0] * 0,
+                  msg->imu_state.accelerometer[1] * 0,
+                  msg->imu_state.accelerometer[2] * 0};
+  imu_ang_vel_ = {msg->imu_state.gyroscope[0] * 0, msg->imu_state.gyroscope[1] * 0,
+                  msg->imu_state.gyroscope[2] * 0};
 
   // Run the ONNX mode
   std::vector<float> action(12, 0.0);
@@ -143,8 +143,8 @@ void ONNXController::prepare_observation(std::vector<float>& observation) {
   observation.insert(observation.end(), vel_cmd_.begin(), vel_cmd_.end());
   observation.insert(observation.end(), q_.begin(), q_.end());
   observation.insert(observation.end(), dq_.begin(), dq_.end());
-  //observation.insert(observation.end(), action_.begin(), action_.end());
-  observation.insert(observation.end(), 12, 0.0);
+  observation.insert(observation.end(), action_.begin(), action_.end());
+  //observation.insert(observation.end(), 12, 0.0);
 }
 
 void ONNXController::publish() {
@@ -161,3 +161,20 @@ int main(int argc, char* argv[]) {
   rclcpp::shutdown();
   return 0;
 }
+
+/*
+q0 =
+9: 0.135416
+10: 1.22434
+11: -2.7229
+12: -0.13507
+13: 1.22309
+14: -2.72294
+15: -0.00658123
+16: 1.49209
+17: -2.99261
+18: -0.482452
+19: 1.24558
+20: -2.72279
+
+*/

@@ -62,5 +62,5 @@ class ONNXController : public rclcpp::Node {
   std::array<float, 12> action_;  ///< Action to
 
   // Initial pose
-  std::array<float, 12> q0_(0.0);
+  std::array<float, 12> q0_ = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 };
