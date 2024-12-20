@@ -17,7 +17,8 @@ using namespace std::chrono_literals;
 
 ONNXController::ONNXController()
     : Node("onnx_controller"),
-      count_(0) {
+      count_(0),
+      action_(12, 0.0){
   subscription_ = this->create_subscription<unitree_go::msg::LowState>(
       "/lowstate", 10,
       std::bind(&ONNXController::consume, this, std::placeholders::_1));
@@ -38,10 +39,15 @@ ONNXController::ONNXController()
   actor_ = std::make_unique<ONNXActor>(model_path);
 
   cmd_ = std::make_shared<unitree_go::msg::LowCmd>();
+
   // Initialize the command structure
   initialize_command();
 
+  // Print the ONNXActor
+  actor_->print_model_info();
 
+  // Print observation and action
+  print_vecs();
 }
 
 /**
@@ -58,8 +64,8 @@ ONNXController::ONNXController()
  * - `led` is set to an array of 12 zeros.
  */
 void ONNXController::initialize_command(){
-  cmd_->head = {0xEF, 0xEF}; // Segfault here
-  cmd_->level_flag = 0; // Segfault here too, and also likely below...
+  cmd_->head = {0xEF, 0xEF};
+  cmd_->level_flag = 0;
   cmd_->frame_reserve = 0;
   cmd_->sn = {0, 0};
   cmd_->bandwidth = 0;
@@ -74,7 +80,7 @@ void ONNXController::initialize_command(){
     m_cmd_.dq = 0;
     // c.f. 
     // https://github.com/isaac-sim/IsaacLab/blob/874b7b628d501640399a241854c83262c5794a4b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/unitree.py#L167
-    m_cmd_.kp = 15.0;
+    m_cmd_.kp = 10.0;
     m_cmd_.kd = 0.5;
     /////// c.f.
     m_cmd_.tau = 0;
@@ -91,67 +97,83 @@ void ONNXController::prepare_command(){
   for(size_t i = 0; i < 12; i++){
     size_t urdf_i = ros_to_urdf_idx_[i];
     cmd_->motor_cmd[i].q = action_[urdf_i];
-    cmd_->motor_cmd[i].dq = 0;
   }
 }
 
 void ONNXController::consume(const unitree_go::msg::LowState::SharedPtr msg) {
-  // Ingest proprioceptive data
-  for (size_t i = 0; i < 12; i++) {
-    size_t urdf_i = ros_to_urdf_idx_[i];
-    q_[urdf_i] = msg->motor_state[i].q;
-    dq_[urdf_i] = msg->motor_state[i].dq;
-  }
+  // Copy the state message
+  state_ = msg;
+  count_++;
+}
 
-  // Ingest IMU data
-  imu_lin_acc_ = {msg->imu_state.accelerometer[0] * 0,
-                  msg->imu_state.accelerometer[1] * 0,
-                  msg->imu_state.accelerometer[2] * 0};
-  imu_ang_vel_ = {msg->imu_state.gyroscope[0] * 0, msg->imu_state.gyroscope[1] * 0,
-                  msg->imu_state.gyroscope[2] * 0};
+void ONNXController::prepare_observation() {
+  observation_.clear(); // Clear the observation vector
+  
+  // Add the linear acceleration and angular velocity
+  observation_.insert(observation_.end(), imu_lin_acc_.begin(), imu_lin_acc_.end());
+  observation_.insert(observation_.end(), imu_ang_vel_.begin(), imu_ang_vel_.end());
 
-  // Run the ONNX mode
-  std::vector<float> action(12, 0.0);
-  std::vector<float> observation(45, 0.0);
-  prepare_observation(observation);
+  // Add the commanded velocity
+  observation_.insert(observation_.end(), vel_cmd_.begin(), vel_cmd_.end());
 
-  actor_->observe(observation);
-  actor_->act(action);
+  // Add the joint positions and velocities
+  observation_.insert(observation_.end(), q_.begin(), q_.end());
+  observation_.insert(observation_.end(), dq_.begin(), dq_.end());
 
-  std::copy(action.begin(), action.end(), action_.begin());
+  // Add the previous action
+  observation_.insert(observation_.end(), action_.begin(), action_.end());
 
+  //observation.insert(observation.end(), 12, 0.0);
+}
+
+void ONNXController::print_vecs(){
   // Print observation and action
   std::cout << "Observation: " << std::endl;
-  for(int i = 0; i < observation.size(); i++){
-    std::cout << i << ": " << observation[i] << std::endl;
+  for(int i = 0; i < observation_.size(); i++){
+    std::cout << i << ": " << observation_[i] << std::endl;
   }
   std::cout << std::endl;
 
   std::cout << "Action: " << std::endl;
-  for(int i = 0; i < action.size(); i++){
-    std::cout << i << ": " << action[i] << std::endl;
+  for(int i = 0; i < action_.size(); i++){
+    std::cout << i << ": " << action_[i] << std::endl;
   }
   std::cout << std::endl;
 }
 
-void ONNXController::prepare_observation(std::vector<float>& observation) {
-  observation.clear(); // Empty the observation vector
-  observation.insert(observation.end(), imu_lin_acc_.begin(),
-                     imu_lin_acc_.end());
-  observation.insert(observation.end(), imu_ang_vel_.begin(),
-                     imu_ang_vel_.end());
-  observation.insert(observation.end(), vel_cmd_.begin(), vel_cmd_.end());
-  observation.insert(observation.end(), q_.begin(), q_.end());
-  observation.insert(observation.end(), dq_.begin(), dq_.end());
-  observation.insert(observation.end(), action_.begin(), action_.end());
-  //observation.insert(observation.end(), 12, 0.0);
-}
-
 void ONNXController::publish() {
+  if (!state_) {
+    return;
+  }
+
+  // Ingest proprioceptive data
+  for (size_t i = 0; i < 12; i++) {
+    size_t urdf_i = ros_to_urdf_idx_[i];
+    q_[urdf_i] = state_->motor_state[i].q;
+    dq_[urdf_i] = state_->motor_state[i].dq;
+  }
+
+  // Ingest IMU data
+  imu_lin_acc_ = {state_->imu_state.accelerometer[0] * 0,
+                  state_->imu_state.accelerometer[1] * 0,
+                  state_->imu_state.accelerometer[2] * 0};
+  imu_ang_vel_ = {state_->imu_state.gyroscope[0] * 0, state_->imu_state.gyroscope[1] * 0,
+                  state_->imu_state.gyroscope[2] * 0};
+
+  // Run the ONNX model
+  prepare_observation();
+
+  actor_->observe(observation_);
+  actor_->act(action_);
+
+  // std::copy(q0_.begin(), q0_.end(), action_.begin());
+
+  // Print observation and action
+  print_vecs();
+
   // Prepare the command
   prepare_command();
-  auto msg = *cmd_.get();
-  publisher_->publish(msg);
+  publisher_->publish(*cmd_.get());
 
 }
 
