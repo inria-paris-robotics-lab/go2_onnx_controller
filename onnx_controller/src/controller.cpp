@@ -80,7 +80,7 @@ void ONNXController::initialize_command(){
     m_cmd_.dq = 0;
     // c.f. 
     // https://github.com/isaac-sim/IsaacLab/blob/874b7b628d501640399a241854c83262c5794a4b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/unitree.py#L167
-    m_cmd_.kp = 10.0;
+    m_cmd_.kp = 25.0;
     m_cmd_.kd = 0.5;
     /////// c.f.
     m_cmd_.tau = 0;
@@ -136,7 +136,8 @@ void ONNXController::print_vecs(){
 
   std::cout << "Action: " << std::endl;
   for(int i = 0; i < action_.size(); i++){
-    std::cout << i << ": " << action_[i] << std::endl;
+    size_t urdf_i = ros_to_urdf_idx_[i];
+    std::cout << i << ": " << action_[urdf_i] << std::endl;
   }
   std::cout << std::endl;
 }
