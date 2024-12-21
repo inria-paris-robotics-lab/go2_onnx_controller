@@ -45,8 +45,6 @@ private:
 
   std::unique_ptr<ONNXActor> actor_;
 
-  // Index conversion
-  const std::array<uint8_t, 12> ros_to_urdf_idx_ = get_ros_to_urdf_idx();
 
   // Inertial state
   std::array<float, 3> imu_lin_acc_; ///< Linear acceleration
@@ -63,14 +61,14 @@ private:
   std::vector<float> observation_; ///< Observation vector, of size 45
 
   // Initial pose
-  std::array<float, 12> q0_ = {-1.5, 0.1, 0.8, -1.5, -0.1, 0.8, -1.5, 0.1, 1.0, -1.5, -0.1, 1.0};
+  const std::array<float, 12> q0_ = {0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5};
 
   // Joint names (Isaac does breadth-first traversal)
   const std::array<std::string, 12> isaac_joint_names_ = {"FL_hip_joint", "FR_hip_joint", "RL_hip_joint", "RR_hip_joint",
     "FL_thigh_joint", "FR_thigh_joint", "RL_thigh_joint", "RR_thigh_joint", "FL_calf_joint", "FR_calf_joint", "RL_calf_joint", "RR_calf_joint"};
 
-  const std::array<std::string, 12> bullet_joint_names_ = {"FL_hip_joint", "FL_thigh_joint", "FL_calf_joint", "FR_hip_joint",
-    "FR_thigh_joint", "FR_calf_joint", "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint", "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"};
+  const std::array<std::string, 12> bullet_joint_names_ = {"FR_hip_joint", "FR_thigh_joint", "FR_calf_joint", "FL_hip_joint", "FL_thigh_joint", 
+    "FL_calf_joint", "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint", "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"};
 
   const std::array<uint8_t, 12> isaac_in_bullet_ = get_permutation(isaac_joint_names_, bullet_joint_names_);
 };

@@ -80,7 +80,7 @@ void ONNXController::initialize_command(){
     m_cmd_.dq = 0;
     // c.f. 
     // https://github.com/isaac-sim/IsaacLab/blob/874b7b628d501640399a241854c83262c5794a4b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/unitree.py#L167
-    m_cmd_.kp = 25.0;
+    m_cmd_.kp = 2500.0;
     m_cmd_.kd = 0.5;
     /////// c.f.
     m_cmd_.tau = 0;
@@ -95,8 +95,8 @@ void ONNXController::initialize_command(){
  */
 void ONNXController::prepare_command(){
   for(size_t i = 0; i < 12; i++){
-    size_t urdf_i = ros_to_urdf_idx_[i];
-    cmd_->motor_cmd[i].q = action_[urdf_i];
+    size_t bullet_idx = isaac_in_bullet_[i];
+    cmd_->motor_cmd[bullet_idx].q = action_[i];
   }
 }
 
@@ -129,14 +129,14 @@ void ONNXController::prepare_observation() {
 void ONNXController::print_vecs(){
   // Print observation and action
   std::cout << "Observation: " << std::endl;
-  for(int i = 0; i < observation_.size(); i++){
+  for(size_t i = 0; i < observation_.size(); i++){
     std::cout << i << ": " << observation_[i] << std::endl;
   }
   std::cout << std::endl;
 
   std::cout << "Action: " << std::endl;
-  for(int i = 0; i < action_.size(); i++){
-    size_t urdf_i = ros_to_urdf_idx_[i];
+  for(size_t i = 0; i < action_.size(); i++){
+    size_t urdf_i = isaac_in_bullet_[i];
     std::cout << i << ": " << action_[urdf_i] << std::endl;
   }
   std::cout << std::endl;
@@ -149,9 +149,9 @@ void ONNXController::publish() {
 
   // Ingest proprioceptive data
   for (size_t i = 0; i < 12; i++) {
-    size_t urdf_i = ros_to_urdf_idx_[i];
-    q_[urdf_i] = state_->motor_state[i].q;
-    dq_[urdf_i] = state_->motor_state[i].dq;
+    size_t bullet_idx = isaac_in_bullet_[i];
+    q_[i] = state_->motor_state[bullet_idx].q;
+    dq_[i] = state_->motor_state[bullet_idx].dq;
   }
 
   // Ingest IMU data
@@ -167,7 +167,7 @@ void ONNXController::publish() {
   actor_->observe(observation_);
   actor_->act(action_);
 
-  // std::copy(q0_.begin(), q0_.end(), action_.begin());
+  std::copy(q0_.begin(), q0_.end(), action_.begin());
 
   // Print observation and action
   print_vecs();
