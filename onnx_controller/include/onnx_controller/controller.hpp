@@ -7,68 +7,147 @@
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
 
-constexpr std::array<std::uint8_t, 12> get_permutation(const std::array<std::string, 12> source, const std::array<std::string, 12> target)
-{
-  std::array<std::uint8_t, 12> permutation{0};
-  for (size_t i = 0; i < 12; i++)
-  {
-    auto it = std::find(target.begin(), target.end(), source[i]);
-    permutation[i] = std::distance(target.begin(), it);
+/**
+ * Maps the indices of elements in the source array to their corresponding indices in the target array.
+ *
+ * @tparam T The type of elements in the arrays.
+ * @tparam N The size of the arrays.
+ * @param source The source array.
+ * @param target The target array.
+ * @return An array of indices representing the mapping from source to target.
+ */
+template <typename T, size_t N>
+constexpr std::array<std::uint8_t, N> map_indices(std::array<T, N> source,
+                                                  std::array<T, N> target) {
+  std::array<std::uint8_t, N> permutation{0};
+  for (size_t i = 0; i < N; i++) {
+    for (size_t j = 0; j < N; j++) {
+      if (source[i] == target[j]) {
+        permutation[i] = j;
+        break;
+      }
+    }
   }
   return permutation;
 }
 
-class ONNXController : public rclcpp::Node
-{
-public:
+class ONNXController : public rclcpp::Node {
+ public:
   ONNXController();
 
+  /**
+   * @brief Consumes the state message.
+   *
+   * This function consumes the state message and stores it in the `state_`
+   * member variable.
+   *
+   * @param msg The LowState message to consume.
+   */
   void consume(const unitree_go::msg::LowState::SharedPtr msg);
+
+  /**
+   * @brief Publishes the command to the /lowcmd topic.
+  */
   void publish();
 
-  // const std::array<uint8_t, 12> urdf_to_ros(const std::array<uint8_t, 12>);
-  // const std::array<uint8_t, 12> ros_to_urdf(const std::array<uint8_t, 12>);
-
-private:
+ private:
+  /**
+   * @brief Populates the observation vector.
+   *
+   * This function populates the observation vector `observation_` with the
+   * linear acceleration, angular velocity, commanded velocity, joint positions,
+   * joint velocities, and previous action.
+   */
   void prepare_observation();
+
+  /**
+   * @brief Initializes the command structure with default values.
+   *
+   * This function sets up the command structure `cmd_` with initial values:
+   *
+   * - `head = {0xEF, 0xEF}`,
+   * - `level_flag = 0`,
+   * - `frame_reserve = 0`,
+   * - `sn = {0, 0}`,
+   * - `bandwidth = 0`,
+   * - `fan = {0, 0}`,
+   * - `reserve = 0`,
+   * - `led` is a 12-element array of zeros.
+   */
   void initialize_command();
+
+  /**
+   * @brief Prepares the command structure for publishing.
+   *
+   * This function prepares the command structure `cmd_` for publishing by
+   * setting the joint positions and velocities to the values in `action_`.
+   */
   void prepare_command();
+
+  /**
+   * @brief Prints the observation and action vectors.
+   *
+   * This function prints the observation and action vectors to the standard
+   * output.
+   */
   void print_vecs();
 
-  rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr subscription_;
-  rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr publisher_;
-  size_t count_;
+  /**
+   * @brief Moves the robot to the initial pose.
+   *
+   * This function moves the robot to the initial pose by interpolating the
+   * joint positions from the current state to the initial pose.
+   */
+  void initial_pose();
 
-  unitree_go::msg::LowState::SharedPtr state_;
-  unitree_go::msg::LowCmd::SharedPtr cmd_;
+  rclcpp::TimerBase::SharedPtr timer_;  ///< Timer for publishing commands
+  rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr
+      state_subscription_;  ///< Subscription to the state topic
+  rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr
+      publisher_;  ///< Publisher for the command topic
 
-  std::unique_ptr<ONNXActor> actor_;
+  unitree_go::msg::LowState::SharedPtr
+      state_;                               ///< Pointer to the LowState message
+  unitree_go::msg::LowCmd::SharedPtr cmd_;  ///< Pointer to the LowCmd message
 
+  std::unique_ptr<ONNXActor> actor_;  ///< ONNXActor object
 
   // Inertial state
-  std::array<float, 3> imu_lin_acc_; ///< Linear acceleration
-  std::array<float, 3> imu_ang_vel_; ///< Angular velocity
+  std::array<float, 3> imu_lin_acc_{0.0};  ///< Linear acceleration
+  std::array<float, 3> imu_ang_vel_{0.0, 0.0, 0.0};  ///< Angular velocity
 
-  std::array<float, 3> vel_cmd_{0.0, 0.0, 0.0}; ///< Linear velocity command
+  std::array<float, 3> vel_cmd_{0.0, 0.0, 0.0};  ///< Linear velocity command
 
   // Proprioceptive state
-  std::array<float, 12> q_;  ///< Joint positions
-  std::array<float, 12> dq_; ///< Joint velocities
+  std::array<float, 12> q_{0.0};   ///< Joint positions
+  std::array<float, 12> dq_{0.0};  ///< Joint velocities
 
   // Control state
-  std::vector<float> action_;      ///< Action to be taken, of size 12
-  std::vector<float> observation_; ///< Observation vector, of size 45
+  std::vector<float> action_;       ///< Action to be taken, of size 12
+  std::vector<float> observation_;  ///< Observation vector, of size 45
 
-  // Initial pose
-  const std::array<float, 12> q0_ = {0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5};
+  //! Interpolation parameters to reach the initial pose
+  static constexpr uint16_t num_interpolation_it_ =
+      200;             ///< Number of iterations to reach the initial pose
+  uint16_t it_count_;  ///< Current iteration count
 
-  // Joint names (Isaac does breadth-first traversal)
-  const std::array<std::string, 12> isaac_joint_names_ = {"FL_hip_joint", "FR_hip_joint", "RL_hip_joint", "RR_hip_joint",
-    "FL_thigh_joint", "FR_thigh_joint", "RL_thigh_joint", "RR_thigh_joint", "FL_calf_joint", "FR_calf_joint", "RL_calf_joint", "RR_calf_joint"};
+  //! Initial pose (in radians, Isaac order)
+  static constexpr std::array<const float, 12> q0_ = {
+      0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5};
 
-  const std::array<std::string, 12> bullet_joint_names_ = {"FR_hip_joint", "FR_thigh_joint", "FR_calf_joint", "FL_hip_joint", "FL_thigh_joint", 
-    "FL_calf_joint", "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint", "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint"};
+  //! Joint names (Isaac does breadth-first traversal)
+  static constexpr std::array<std::string_view, 12> isaac_joint_names_ = {
+      "FL_hip_joint",   "FR_hip_joint",   "RL_hip_joint",   "RR_hip_joint",
+      "FL_thigh_joint", "FR_thigh_joint", "RL_thigh_joint", "RR_thigh_joint",
+      "FL_calf_joint",  "FR_calf_joint",  "RL_calf_joint",  "RR_calf_joint"};
 
-  const std::array<uint8_t, 12> isaac_in_bullet_ = get_permutation(isaac_joint_names_, bullet_joint_names_);
+  //! Bullet joint names (Bullet does depth-first traversal)
+  static constexpr std::array<std::string_view, 12> bullet_joint_names_ = {
+      "FR_hip_joint",   "FR_thigh_joint", "FR_calf_joint",  "FL_hip_joint",
+      "FL_thigh_joint", "FL_calf_joint",  "RR_hip_joint",   "RR_thigh_joint",
+      "RR_calf_joint",  "RL_hip_joint",   "RL_thigh_joint", "RL_calf_joint"};
+
+  //! @brief A mapping of indices from Isaac joint names to Bullet joint names.
+  static constexpr auto isaac_in_bullet_ =
+      map_indices(isaac_joint_names_, bullet_joint_names_);
 };
