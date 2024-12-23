@@ -113,14 +113,14 @@ class ONNXController : public rclcpp::Node {
   std::unique_ptr<ONNXActor> actor_;  ///< ONNXActor object
 
   // Inertial state
-  std::array<float, 3> imu_lin_acc_{0.0};  ///< Linear acceleration
-  std::array<float, 3> imu_ang_vel_{0.0, 0.0, 0.0};  ///< Angular velocity
+  std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
+  std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
 
-  std::array<float, 3> vel_cmd_{0.0, 0.0, 0.0};  ///< Linear velocity command
+  std::array<float, 3> vel_cmd_{};  ///< Linear velocity command
 
   // Proprioceptive state
-  std::array<float, 12> q_{0.0};   ///< Joint positions
-  std::array<float, 12> dq_{0.0};  ///< Joint velocities
+  std::array<float, 12> q_{};   ///< Joint positions
+  std::array<float, 12> dq_{};  ///< Joint velocities
 
   // Control state
   std::vector<float> action_;       ///< Action to be taken, of size 12
