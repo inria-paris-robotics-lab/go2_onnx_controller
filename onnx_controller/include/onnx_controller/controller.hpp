@@ -135,8 +135,8 @@ class ONNXController : public rclcpp::Node {
       parameter_callback_handle_;  ///< Handle for the parameter callback
 
   // Torque control parameters
-  float kp_ = 0.0;  ///< Proportional gain
-  float kd_ = 0.0;  ///< Derivative gain
+  float kp_ = 30.0;  ///< Proportional gain
+  float kd_ = 0.5;  ///< Derivative gain
 
   // Messages
   sensor_msgs::msg::Joy::SharedPtr joy_;  ///< Pointer to the Joy message

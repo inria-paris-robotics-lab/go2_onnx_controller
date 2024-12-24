@@ -108,6 +108,9 @@ void ONNXController::prepare_command() {
   for (size_t i = 0; i < 12; i++) {
     size_t bullet_idx = isaac_in_bullet_[i];
     cmd_->motor_cmd[bullet_idx].q = (action_[i] * 0.25) + q0_[i];
+    cmd_->motor_cmd[bullet_idx].dq = 0;
+    cmd_->motor_cmd[bullet_idx].kp = kp_;
+    cmd_->motor_cmd[bullet_idx].kd = kd_;
   }
 }
 
@@ -198,7 +201,7 @@ void ONNXController::publish() {
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
     vel_cmd_[1] = -joy_->axes[0];
-    vel_cmd_[2] = -joy_->axes[3];
+    vel_cmd_[2] = joy_->axes[3];
   }
 
   // Run the ONNX model
