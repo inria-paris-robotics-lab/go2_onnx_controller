@@ -200,8 +200,8 @@ void ONNXController::publish() {
   if (joy_ && !joy_->axes.empty()) {
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
-    vel_cmd_[1] = joy_->axes[3];
-    vel_cmd_[2] = joy_->axes[0];
+    vel_cmd_[1] = joy_->axes[0];
+    vel_cmd_[2] = joy_->axes[3];
   }
 
   // Run the ONNX model
