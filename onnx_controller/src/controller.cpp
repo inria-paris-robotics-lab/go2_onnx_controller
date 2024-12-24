@@ -29,6 +29,7 @@ std::string get_model_path() {
 
 ONNXController::ONNXController()
     : Node("onnx_controller"),
+      joy_(std::make_shared<sensor_msgs::msg::Joy>()),
       state_(std::make_shared<unitree_go::msg::LowState>()),
       cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
       actor_(std::make_unique<ONNXActor>(get_model_path())),
@@ -73,6 +74,9 @@ ONNXController::ONNXController()
 
   // Print the ONNXActor
   actor_->print_model_info();
+
+  // Print vectors
+  print_vecs();
 }
 
 void ONNXController::initialize_command() {
@@ -151,6 +155,12 @@ void ONNXController::print_vecs() {
   }
   std::cout << std::endl;
 
+  std::cout << "Velocity command: " << std::endl;
+  for (size_t i = 0; i < vel_cmd_.size(); i++) {
+    std::cout << i << ": " << vel_cmd_[i] << std::endl;
+  }
+  std::cout << std::endl;
+
   std::cout << "kp: " << kp_ << std::endl;
   std::cout << "kd: " << kd_ << std::endl;
   std::cout << std::endl;
@@ -182,6 +192,13 @@ void ONNXController::publish() {
   for (size_t i = 0; i < 3; i++) {
     imu_lin_acc_[i] = state_->imu_state.accelerometer[i];
     imu_ang_vel_[i] = state_->imu_state.gyroscope[i];
+  }
+
+  if (joy_ && !joy_->axes.empty()) {
+    // Ingest commanded velocity
+    vel_cmd_[0] = joy_->axes[1];
+    vel_cmd_[1] = -joy_->axes[0];
+    vel_cmd_[2] = -joy_->axes[3];
   }
 
   // Run the ONNX model

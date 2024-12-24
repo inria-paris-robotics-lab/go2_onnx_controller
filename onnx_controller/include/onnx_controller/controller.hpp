@@ -139,7 +139,7 @@ class ONNXController : public rclcpp::Node {
   float kd_ = 0.0;  ///< Derivative gain
 
   // Messages
-  sensor_msgs::msg::Joy::SharedPtr joy_{};  ///< Pointer to the Joy message
+  sensor_msgs::msg::Joy::SharedPtr joy_;  ///< Pointer to the Joy message
   unitree_go::msg::LowState::SharedPtr
       state_;                               ///< Pointer to the LowState message
   unitree_go::msg::LowCmd::SharedPtr cmd_;  ///< Pointer to the LowCmd message
