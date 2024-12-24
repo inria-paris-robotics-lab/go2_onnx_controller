@@ -87,7 +87,7 @@ void ONNXController::initialize_command() {
   cmd_->bandwidth = 0;
   cmd_->fan = {0, 0};
   cmd_->reserve = 0;
-  cmd_->led = std::array<uint8_t, 12>{0};
+  cmd_->led = std::array<uint8_t, 12>{};
 
   /* Initialize the motor commands,
    * refer to
@@ -200,8 +200,8 @@ void ONNXController::publish() {
   if (joy_ && !joy_->axes.empty()) {
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
-    vel_cmd_[1] = joy_->axes[0];
-    vel_cmd_[2] = joy_->axes[3];
+    vel_cmd_[1] = joy_->axes[3];
+    vel_cmd_[2] = joy_->axes[0];
   }
 
   // Run the ONNX model
