@@ -4,11 +4,13 @@
 
 #include "onnx_actor.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joy.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
 
 /**
- * Maps the indices of elements in the source array to their corresponding indices in the target array.
+ * Maps the indices of elements in the source array to their corresponding
+ * indices in the target array.
  *
  * @tparam T The type of elements in the arrays.
  * @tparam N The size of the arrays.
@@ -46,8 +48,18 @@ class ONNXController : public rclcpp::Node {
   void consume(const unitree_go::msg::LowState::SharedPtr msg);
 
   /**
+   * @brief Consumes the Joy message.
+   *
+   * This function consumes the Joy message and stores it in the `joy_` member
+   * variable.
+   *
+   * @param msg The Joy message to consume.
+   */
+  void consume(const sensor_msgs::msg::Joy::SharedPtr msg);
+
+  /**
    * @brief Publishes the command to the /lowcmd topic.
-  */
+   */
   void publish();
 
  private:
@@ -100,12 +112,34 @@ class ONNXController : public rclcpp::Node {
    */
   void initial_pose();
 
+  /**
+   * @brief Callback function for setting parameters.
+   *
+   * This function is called when the parameters are set.
+   *
+   * @param params The parameters to set.
+   *
+   * @return The result of setting the parameters.
+   */
+  rcl_interfaces::msg::SetParametersResult set_param_callback(
+      const std::vector<rclcpp::Parameter> &params);
+
   rclcpp::TimerBase::SharedPtr timer_;  ///< Timer for publishing commands
+  rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr
+      joy_subscription_;  ///< Subscription to the Joy topic
   rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr
       state_subscription_;  ///< Subscription to the state topic
   rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr
       publisher_;  ///< Publisher for the command topic
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
+      parameter_callback_handle_;  ///< Handle for the parameter callback
 
+  // Torque control parameters
+  float kp_ = 0.0;  ///< Proportional gain
+  float kd_ = 0.0;  ///< Derivative gain
+
+  // Messages
+  sensor_msgs::msg::Joy::SharedPtr joy_{};  ///< Pointer to the Joy message
   unitree_go::msg::LowState::SharedPtr
       state_;                               ///< Pointer to the LowState message
   unitree_go::msg::LowCmd::SharedPtr cmd_;  ///< Pointer to the LowCmd message

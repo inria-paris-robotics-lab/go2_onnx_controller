@@ -11,14 +11,14 @@ set(CMAKE_CXX_STANDARD 17)
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(std_msgs REQUIRED)
 find_package(unitree_go REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 add_executable(controller src/controller.cpp)
 # TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
-target_link_libraries(controller onnx-actor onnxruntime) 
+target_link_libraries(controller onnx-actor onnxruntime)
 
-ament_target_dependencies(controller rclcpp std_msgs unitree_go)
+ament_target_dependencies(controller rclcpp unitree_go sensor_msgs)
 target_include_directories(controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/onnx_controller>) # for headers when building)
 

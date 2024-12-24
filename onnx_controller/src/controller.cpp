@@ -7,8 +7,8 @@
 #include <string>
 
 #include "onnx_actor.hpp"
+#include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/string.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
 #include "unitree_go/msg/motor_cmd.hpp"
@@ -29,15 +29,37 @@ std::string get_model_path() {
 
 ONNXController::ONNXController()
     : Node("onnx_controller"),
-      cmd_(),
+      state_(std::make_shared<unitree_go::msg::LowState>()),
+      cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
       actor_(std::make_unique<ONNXActor>(get_model_path())),
       action_(12, 0.0),
       observation_(45, 0.0),
       it_count_(0) {
-  // Subscribe to the lowstate topic
+  // Define callback functions for the subscriptions
+  auto state_callback = [this](const unitree_go::msg::LowState::SharedPtr msg) {
+    consume(msg);
+  };
+  auto joy_callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) {
+    consume(msg);
+  };
+
+  // Set parameters
+  this->declare_parameter("kp", kp_);
+  this->declare_parameter("kd", kd_);
+
+  auto param_change_callback =
+      [this](const std::vector<rclcpp::Parameter>& params) {
+        return set_param_callback(params);
+      };
+
+  parameter_callback_handle_ =
+      this->add_on_set_parameters_callback(param_change_callback);
+
+  // Subscribe to the lowstate and Joy topics
   state_subscription_ = this->create_subscription<unitree_go::msg::LowState>(
-      "/lowstate", 10,
-      std::bind(&ONNXController::consume, this, std::placeholders::_1));
+      "/lowstate", 1, state_callback);
+  joy_subscription_ =
+      this->create_subscription<sensor_msgs::msg::Joy>("/joy", 1, joy_callback);
 
   // Publish to the lowcmd topic
   publisher_ = this->create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
@@ -51,9 +73,6 @@ ONNXController::ONNXController()
 
   // Print the ONNXActor
   actor_->print_model_info();
-
-  // Print observation and action
-  print_vecs();
 }
 
 void ONNXController::initialize_command() {
@@ -64,7 +83,6 @@ void ONNXController::initialize_command() {
   cmd_->bandwidth = 0;
   cmd_->fan = {0, 0};
   cmd_->reserve = 0;
-  // 1-> zeros for the 12 leds
   cmd_->led = std::array<uint8_t, 12>{0};
 
   /* Initialize the motor commands,
@@ -76,8 +94,8 @@ void ONNXController::initialize_command() {
     m_cmd_.mode = 0;
     m_cmd_.q = 0;
     m_cmd_.dq = 0;
-    m_cmd_.kp = 30.0;
-    m_cmd_.kd = 0.5;
+    m_cmd_.kp = kp_;
+    m_cmd_.kd = kd_;
     m_cmd_.tau = 0;
   }
 }
@@ -92,6 +110,11 @@ void ONNXController::prepare_command() {
 void ONNXController::consume(const unitree_go::msg::LowState::SharedPtr msg) {
   // Copy the state message
   state_ = msg;
+}
+
+void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
+  // Copy the Joy message
+  joy_ = msg;
 }
 
 void ONNXController::prepare_observation() {
@@ -126,6 +149,10 @@ void ONNXController::print_vecs() {
   for (size_t i = 0; i < action_.size(); i++) {
     std::cout << i << ": " << action_[i] << std::endl;
   }
+  std::cout << std::endl;
+
+  std::cout << "kp: " << kp_ << std::endl;
+  std::cout << "kd: " << kd_ << std::endl;
   std::cout << std::endl;
 }
 
@@ -174,6 +201,26 @@ void ONNXController::publish() {
   // Prepare the command
   prepare_command();
   publisher_->publish(*cmd_.get());
+}
+
+rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
+    const std::vector<rclcpp::Parameter>& params) {
+  rcl_interfaces::msg::SetParametersResult result;
+  result.successful = true;
+
+  for (const auto& param : params) {
+    if (param.get_name() == "kp") {
+      kp_ = param.as_double();
+    } else if (param.get_name() == "kd") {
+      kd_ = param.as_double();
+    } else {
+      result.successful = false;
+    }
+  }
+
+  initialize_command();
+
+  return result;
 }
 
 int main(int argc, char* argv[]) {
