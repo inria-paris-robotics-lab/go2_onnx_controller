@@ -201,7 +201,7 @@ void ONNXController::publish() {
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
     vel_cmd_[1] = joy_->axes[0];
-    vel_cmd_[2] = joy_->axes[3];
+    vel_cmd_[2] = joy_->axes[3] * joy_->axes[1];
   }
 
   // Run the ONNX model
