@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 
+#include "motor_crc.hpp"
 #include "onnx_actor.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -220,6 +221,7 @@ void ONNXController::publish() {
 
   // Prepare the command
   prepare_command();
+  get_crc(*cmd_.get());
   publisher_->publish(*cmd_.get());
 }
 

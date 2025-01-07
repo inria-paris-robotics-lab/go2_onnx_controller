@@ -14,7 +14,10 @@ find_package(rclcpp REQUIRED)
 find_package(unitree_go REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
-add_executable(controller src/controller.cpp)
+add_executable(controller
+  src/controller.cpp
+  src/motor_crc.cpp
+)
 # TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
 target_link_libraries(controller onnx-actor onnxruntime)
 
