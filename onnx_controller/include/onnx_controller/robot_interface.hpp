@@ -70,6 +70,21 @@ class Go2RobotInterface {
                                           std::vector<float>,
                                           std::vector<float>));
 
+  /**
+   * @brief Moves the robot to the initial pose.
+   *
+   * This function moves the robot to the initial pose by interpolating the
+   * joint positions from the current state to the initial pose.
+   *
+   * @param q_des_ The desired joint positions.
+   * @param duration_ms The duration of the interpolation in seconds.
+   */
+  void go_to_configuration(const std::array<float, 12> &q_des_,
+                           float duration_s);
+
+  void go_to_configuration_aux(const std::array<float, 12> &q_des_,
+                               float duration_s);
+
   // Getters
   bool is_ready() const { return is_ready_; }
   bool is_safe() const { return is_safe_; }
@@ -105,7 +120,7 @@ class Go2RobotInterface {
    *
    * @param msg The LowState message to consume.
    */
-  void consume(const unitree_go::msg::LowState::SharedPtr msg);
+  void consume_state(const unitree_go::msg::LowState::SharedPtr msg);
 
   /**
    * @brief Consumes the `/watchdog/is_safe` message.
@@ -134,26 +149,13 @@ class Go2RobotInterface {
                         const std::array<float, 12> &tau,
                         const std::array<float, 12> &kp,
                         const std::array<float, 12> &kd);
-
-  /**
-   * @brief Moves the robot to the initial pose.
-   *
-   * This function moves the robot to the initial pose by interpolating the
-   * joint positions from the current state to the initial pose.
-   *
-   * @param q_des_ The desired joint positions.
-   * @param duration_ms The duration of the interpolation in seconds.
-   */
-  void go_to_configuration(const std::array<float, 12> &q_des_,
-                           float duration_s);
-
   /// @brief The node handle
   rclcpp::Node &node_;
 
   // Safety flags
   bool is_ready_ =
       false;  ///< True if the robot has been successfully initialised.
-  bool is_safe_ = false;  ///< True if it is safe to publish commands.
+  bool is_safe_ = true;  ///< True if it is safe to publish commands.
 
   // Robot state
   // Inertial state

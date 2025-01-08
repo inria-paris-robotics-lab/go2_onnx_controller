@@ -14,6 +14,8 @@ Go2RobotInterface::Go2RobotInterface(
     rclcpp::Node &node,
     const std::array<std::string_view, 12> source_joint_names)
     : node_(node),
+      state_(std::make_shared<unitree_go::msg::LowState>()),
+      cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
       source_joint_names_(source_joint_names),
       idx_source_in_target_(
           map_indices(source_joint_names_, target_joint_names_)),
@@ -27,7 +29,7 @@ Go2RobotInterface::Go2RobotInterface(
 
   // Subscribe to the /lowstate and /watchdog/is_safe topics
   auto state_callback = [this](const unitree_go::msg::LowState::SharedPtr msg) {
-    consume(msg);
+    consume_state(msg);
   };
   state_subscription_ = node_.create_subscription<unitree_go::msg::LowState>(
       "/lowstate", 10, state_callback);
@@ -37,6 +39,9 @@ Go2RobotInterface::Go2RobotInterface(
   };
   watchdog_subscription_ = node.create_subscription<std_msgs::msg::Bool>(
       "/watchdog/is_safe", 10, watchdog_callback);
+
+  // Initialize the command
+  initialize_command();
 };
 
 void Go2RobotInterface::initialize_command() {
@@ -103,36 +108,36 @@ void Go2RobotInterface::send_command_aux(const std::array<float, 12> &q,
   }
 };
 
-void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des_,
-                                            float duration_s) {
+void Go2RobotInterface::go_to_configuration_aux(
+    const std::array<float, 12> &q_des, float duration_s) {
   // Check that duration is positive
   if (duration_s <= 0) {
     throw std::runtime_error("Duration must be strictly positive!");
   }
-  // Get the current state
-  std::array<float, 12> q0 = state_q_;
-
   // Zero-array for velocities and torques
   std::array<float, 12> zeroes{};
   std::fill(zeroes.begin(), zeroes.end(), 0.0);
 
   // Kp and Kd arrays
   std::array<float, 12> kp_array{};
-  std::fill(kp_array.begin(), kp_array.end(), 50.0);
+  std::fill(kp_array.begin(), kp_array.end(), 150.0);
 
   std::array<float, 12> kd_array{};
-  std::fill(kd_array.begin(), kd_array.end(), 1.0);
+  std::fill(kd_array.begin(), kd_array.end(), 5.0);
 
   // Get the current time
   auto start_time = node_.now();
+
+  // Set up rate limiter
+  auto rate = rclcpp::Rate(100);  // 100 Hz
+
+  // Sleep for a second to allow the robot to stabilise
+  rclcpp::sleep_for(std::chrono::seconds(1));
 
   // Interpolate the joint positions
   while (rclcpp::ok()) {
     // Get the current time
     auto current_time = node_.now() - start_time;
-
-    // Set up rate limiter
-    auto rate = rclcpp::Rate(100);  // 100 Hz
 
     // Calculate the interpolation factor
     float alpha = current_time.seconds() / duration_s;
@@ -143,15 +148,21 @@ void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des_,
     }
 
     // Interpolate the joint positions
-    std::array<float, 12> q;
+    std::array<float, 12> q_step{};
     for (size_t source_idx = 0; source_idx < 12; source_idx++) {
-      q[source_idx] =
-          q0[source_idx] + (q_des_[source_idx] - q0[source_idx]) * alpha;
+      q_step[source_idx] = state_q_[source_idx] +
+                           alpha * (q_des[source_idx] - state_q_[source_idx]);
     }
+
+    std::cout << "q_state: " << std::endl;
+    for (size_t i = 0; i < 12; i++) {
+      std::cout << i << ": " << state_q_[i] << std::endl;
+    }
+    std::cout << std::endl;
 
     // Send the command
     if (is_safe_) {
-      send_command_aux(q, zeroes, zeroes, kp_array, kd_array);
+      send_command_aux(q_step, zeroes, zeroes, kp_array, kd_array);
     } else {
       throw std::runtime_error("Robot is not safe, cannot send command!");
     }
@@ -163,9 +174,10 @@ void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des_,
   // Check if the interpolation is complete by looking at difference
   // between the current and desired joint positions
   for (size_t source_idx = 0; source_idx < 12; source_idx++) {
-    float error = std::abs(q_des_[source_idx] - state_q_[source_idx]);
-    if (error > 0.05) {
-      throw std::runtime_error("Interpolation failed!");
+    float error = std::abs(q_des[source_idx] - state_q_[source_idx]);
+    if (error > 0.1) {
+      throw std::runtime_error("Interpolation failed, error is: " +
+                               std::to_string(error));
     }
   }
 
@@ -173,7 +185,15 @@ void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des_,
   is_ready_ = true;
 };
 
-void Go2RobotInterface::consume(
+void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des,
+                                            float duration_s) {
+  // Run aux in a separate thread
+  std::thread t(&Go2RobotInterface::go_to_configuration_aux, this, q_des,
+                duration_s);
+  t.detach();
+};
+
+void Go2RobotInterface::consume_state(
     const unitree_go::msg::LowState::SharedPtr msg) {
   // Copy the /lowstate message
   state_ = msg;

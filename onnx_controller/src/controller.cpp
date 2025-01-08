@@ -69,6 +69,17 @@ ONNXController::ONNXController()
 
   // Print vectors
   print_vecs();
+
+  RCLCPP_INFO(this->get_logger(),
+              "ONNXController initialised, going to initial "
+              "pose and waiting for Joy message.");
+
+  // Go to the initial pose
+  std::array<float, 12> q_des{};
+  for (size_t i = 0; i < 12; i++) {
+    q_des[i] = q0_[i];
+  }
+  robot_interface_->go_to_configuration(q_des, 10.0);
 }
 
 void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
@@ -123,6 +134,9 @@ void ONNXController::print_vecs() {
 
 void ONNXController::publish() {
   if (!robot_interface_->is_ready() || !robot_interface_->is_safe()) {
+    RCLCPP_WARN(this->get_logger(),
+                "ONNXController::publish() Robot is not ready or safe, cannot "
+                "send command!");
     return;
   }
 
@@ -159,7 +173,7 @@ void ONNXController::publish() {
   std::array<float, 12> kd_array{};
 
   for (size_t i = 0; i < 12; i++) {
-    q_des[i] = q0_[i] + action_[i];
+    q_des[i] = q0_[i] + (action_[i] * 0.25);
     zeroes[i] = 0.0;
     kp_array[i] = kp_;
     kd_array[i] = kd_;
