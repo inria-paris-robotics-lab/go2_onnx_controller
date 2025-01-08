@@ -1,3 +1,5 @@
+#pragma once
+
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -46,11 +48,11 @@ class Go2RobotInterface {
    *
    * This method will throw if the robot is still being initialised, or
    * the watchdog `is_safe_` flag is false.
-   * 
-   * All input arrays are in source (i.e. controller) order, and will be reordered
-   * to match 
    *
-   * @param q Target positions, 
+   * All input arrays are in source (i.e. controller) order, and will be
+   * reordered to match
+   *
+   * @param q Target positions,
    * @param v Target velocities,
    * @param tau Feed-forward torques (Nm),
    * @param Kp Proportional coefficients,
@@ -63,10 +65,20 @@ class Go2RobotInterface {
                     const std::array<float, 12> &kd);
 
   void start_async(const std::vector<float> &q_start, bool goto_config = true);
-  
+
   void register_callback(void (*callback)(float, std::vector<float>,
                                           std::vector<float>,
                                           std::vector<float>));
+
+  // Getters
+  bool is_ready() const { return is_ready_; }
+  bool is_safe() const { return is_safe_; }
+  const std::array<float, 12> &get_q() const { return state_q_; }
+  const std::array<float, 12> &get_dq() const { return state_dq_; }
+  const std::array<float, 12> &get_ddq() const { return state_ddq_; }
+  const std::array<float, 12> &get_tau() const { return state_tau_; }
+  const std::array<float, 3> &get_lin_acc() const { return imu_lin_acc_; }
+  const std::array<float, 3> &get_ang_vel() const { return imu_ang_vel_; }
 
  private:
   /**
@@ -84,7 +96,6 @@ class Go2RobotInterface {
    * - `led` is a 12-element array of zeros.
    */
   void initialize_command();
-  void prepare_command();
 
   /**
    * @brief Consumes the state message.
@@ -106,13 +117,54 @@ class Go2RobotInterface {
    */
   void consume(const std_msgs::msg::Bool::SharedPtr msg);
 
-  rclcpp::Node &node_;  ///< Reference to the controller node. This object MUST
-                        ///< outlive this class.
+  /**
+   * @brief Sends motor commands to the `/lowstate` topic.
+   *
+   * All input arrays are in source (i.e. controller) order, and will be
+   * reordered to match
+   *
+   * @param q Target positions,
+   * @param v Target velocities,
+   * @param tau Feed-forward torques (Nm),
+   * @param Kp Proportional coefficients,
+   * @param Kd derivative coefficients.
+   */
+  void send_command_aux(const std::array<float, 12> &q,
+                        const std::array<float, 12> &v,
+                        const std::array<float, 12> &tau,
+                        const std::array<float, 12> &kp,
+                        const std::array<float, 12> &kd);
+
+  /**
+   * @brief Moves the robot to the initial pose.
+   *
+   * This function moves the robot to the initial pose by interpolating the
+   * joint positions from the current state to the initial pose.
+   *
+   * @param q_des_ The desired joint positions.
+   * @param duration_ms The duration of the interpolation in seconds.
+   */
+  void go_to_configuration(const std::array<float, 12> &q_des_,
+                           float duration_s);
+
+  /// @brief The node handle
+  rclcpp::Node &node_;
 
   // Safety flags
   bool is_ready_ =
       false;  ///< True if the robot has been successfully initialised.
   bool is_safe_ = false;  ///< True if it is safe to publish commands.
+
+  // Robot state
+  // Inertial state
+  std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
+  std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
+
+  // Joint states (12 joints)
+  std::array<float, 12> state_q_{};    ///< Joint positions
+  std::array<float, 12> state_dq_{};   ///< Joint velocities
+  std::array<float, 12> state_ddq_{};  ///< Joint accelerations
+  std::array<float, 12> state_tau_{};  ///< Joint torques (Nm)
 
   // Messages
   unitree_go::msg::LowState::SharedPtr

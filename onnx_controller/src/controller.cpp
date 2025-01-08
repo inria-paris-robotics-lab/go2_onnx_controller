@@ -11,6 +11,7 @@
 #include "onnx_actor.hpp"
 #include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "robot_interface.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
 #include "unitree_go/msg/motor_cmd.hpp"
@@ -32,19 +33,12 @@ std::string get_model_path() {
 ONNXController::ONNXController()
     : Node("onnx_controller"),
       joy_(std::make_shared<sensor_msgs::msg::Joy>()),
-      state_(std::make_shared<unitree_go::msg::LowState>()),
-      cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
       actor_(std::make_unique<ONNXActor>(get_model_path())),
       action_(12, 0.0),
-      observation_(45, 0.0),
-      it_count_(0) {
-  // Define callback functions for the subscriptions
-  auto state_callback = [this](const unitree_go::msg::LowState::SharedPtr msg) {
-    consume(msg);
-  };
-  auto joy_callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) {
-    consume(msg);
-  };
+      observation_(45, 0.0) {
+  // Set up the robot interface
+  robot_interface_ =
+      std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
 
   // Set parameters
   this->declare_parameter("kp", kp_);
@@ -58,67 +52,23 @@ ONNXController::ONNXController()
   parameter_callback_handle_ =
       this->add_on_set_parameters_callback(param_change_callback);
 
-  // Subscribe to the lowstate and Joy topics
-  state_subscription_ = this->create_subscription<unitree_go::msg::LowState>(
-      "/lowstate", 1, state_callback);
+  // Subscribe to the Joy topic
+  auto joy_callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) {
+    consume(msg);
+  };
+
   joy_subscription_ =
       this->create_subscription<sensor_msgs::msg::Joy>("/joy", 1, joy_callback);
-
-  // Publish to the lowcmd topic
-  publisher_ = this->create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
 
   // Set the timer to publish at 50 Hz
   timer_ =
       this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
-
-  // Initialize the command structure
-  initialize_command();
 
   // Print the ONNXActor
   actor_->print_model_info();
 
   // Print vectors
   print_vecs();
-}
-
-void ONNXController::initialize_command() {
-  cmd_->head = {0xEF, 0xEF};
-  cmd_->level_flag = 0;
-  cmd_->frame_reserve = 0;
-  cmd_->sn = {0, 0};
-  cmd_->bandwidth = 0;
-  cmd_->fan = {0, 0};
-  cmd_->reserve = 0;
-  cmd_->led = std::array<uint8_t, 12>{};
-
-  /* Initialize the motor commands,
-   * refer to
-   * https://github.com/isaac-sim/IsaacLab/blob/874b7b628d501640399a241854c83262c5794a4b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/unitree.py#L167
-   * for the default values of kp and kd.
-   */
-  for (auto& m_cmd_ : cmd_->motor_cmd) {
-    m_cmd_.mode = 0;
-    m_cmd_.q = 0;
-    m_cmd_.dq = 0;
-    m_cmd_.kp = kp_;
-    m_cmd_.kd = kd_;
-    m_cmd_.tau = 0;
-  }
-}
-
-void ONNXController::prepare_command() {
-  for (size_t i = 0; i < 12; i++) {
-    size_t bullet_idx = isaac_in_bullet_[i];
-    cmd_->motor_cmd[bullet_idx].q = (action_[i] * 0.25) + q0_[i];
-    cmd_->motor_cmd[bullet_idx].dq = 0;
-    cmd_->motor_cmd[bullet_idx].kp = kp_;
-    cmd_->motor_cmd[bullet_idx].kd = kd_;
-  }
-}
-
-void ONNXController::consume(const unitree_go::msg::LowState::SharedPtr msg) {
-  // Copy the state message
-  state_ = msg;
 }
 
 void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
@@ -171,32 +121,9 @@ void ONNXController::print_vecs() {
   std::cout << std::endl;
 }
 
-void ONNXController::initial_pose() {
-  for (size_t i = 0; i < 12; i++) {
-    float alpha = (float)(num_interpolation_it_ - it_count_) /
-                  num_interpolation_it_;  // Go from 1 to 0
-    action_[i] = q_[i] * alpha;
-  }
-}
-
 void ONNXController::publish() {
-  // If the state is not available, do not publish
-  if (!state_) {
+  if (!robot_interface_->is_ready() || !robot_interface_->is_safe()) {
     return;
-  }
-
-  // Ingest proprioceptive data
-  for (size_t i = 0; i < 12; i++) {
-    size_t bullet_idx = isaac_in_bullet_[i];
-    q_[i] = state_->motor_state[bullet_idx].q -
-            q0_[i];  // Subtract the initial pose
-    dq_[i] = state_->motor_state[bullet_idx].dq;
-  }
-
-  // Ingest IMU data
-  for (size_t i = 0; i < 3; i++) {
-    imu_lin_acc_[i] = state_->imu_state.accelerometer[i];
-    imu_ang_vel_[i] = state_->imu_state.gyroscope[i];
   }
 
   if (joy_ && !joy_->axes.empty()) {
@@ -206,24 +133,40 @@ void ONNXController::publish() {
     vel_cmd_[2] = joy_->axes[3] * joy_->axes[1];
   }
 
-  // Run the ONNX model
-  if (it_count_ >= num_interpolation_it_) {
-    prepare_observation();
-    actor_->observe(observation_);
-    actor_->act(action_);
-  } else {
-    initial_pose();
+  // Get the current state
+  q_ = robot_interface_->get_q();
+  dq_ = robot_interface_->get_dq();
+  imu_lin_acc_ = robot_interface_->get_lin_acc();
+  imu_ang_vel_ = robot_interface_->get_ang_vel();
+
+  // Subtract the q0_ initial pose from the joint positions
+  for (size_t i = 0; i < 12; i++) {
+    q_[i] -= q0_[i];
   }
 
-  it_count_++;
+  // Run the ONNX model
+  prepare_observation();
+  actor_->observe(observation_);
+  actor_->act(action_);
 
   // Print observation and action
   print_vecs();
 
-  // Prepare the command
-  prepare_command();
-  get_crc(*cmd_.get());
-  publisher_->publish(*cmd_.get());
+  // Prepare the arrays for the robot interface
+  std::array<float, 12> q_des{};
+  std::array<float, 12> zeroes{};
+  std::array<float, 12> kp_array{};
+  std::array<float, 12> kd_array{};
+
+  for (size_t i = 0; i < 12; i++) {
+    q_des[i] = q0_[i] + action_[i];
+    zeroes[i] = 0.0;
+    kp_array[i] = kp_;
+    kd_array[i] = kd_;
+  }
+
+  // Send the command
+  robot_interface_->send_command(q_des, zeroes, zeroes, kp_array, kd_array);
 }
 
 rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
@@ -240,8 +183,6 @@ rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
       result.successful = false;
     }
   }
-
-  initialize_command();
 
   return result;
 }
