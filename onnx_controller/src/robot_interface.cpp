@@ -45,7 +45,7 @@ Go2RobotInterface::Go2RobotInterface(
 };
 
 void Go2RobotInterface::initialize_command() {
-  cmd_->head = {0xEF, 0xEF};
+  cmd_->head = {0xFE, 0xEF};
   cmd_->level_flag = 0;
   cmd_->frame_reserve = 0;
   cmd_->sn = {0, 0};
@@ -60,7 +60,7 @@ void Go2RobotInterface::initialize_command() {
    * for the default values of kp and kd.
    */
   for (auto &m_cmd_ : cmd_->motor_cmd) {
-    m_cmd_.mode = 0;
+    m_cmd_.mode = 1;
     m_cmd_.q = 0;
     m_cmd_.dq = 0;
     m_cmd_.kp = 0;
@@ -100,6 +100,8 @@ void Go2RobotInterface::send_command_aux(const std::array<float, 12> &q,
       cmd_->motor_cmd[target_idx].kd = kd[source_idx];
     }
 
+    std::cout << "send_command_aux() ------------------" << std::endl;
+
     // CRC the command -- this is a checksum
     get_crc(*cmd_.get());
 
@@ -120,10 +122,10 @@ void Go2RobotInterface::go_to_configuration_aux(
 
   // Kp and Kd arrays
   std::array<float, 12> kp_array{};
-  std::fill(kp_array.begin(), kp_array.end(), 150.0);
+  std::fill(kp_array.begin(), kp_array.end(), 20.0);
 
   std::array<float, 12> kd_array{};
-  std::fill(kd_array.begin(), kd_array.end(), 5.0);
+  std::fill(kd_array.begin(), kd_array.end(), 0.0);
 
   // Get the current time
   auto start_time = node_.now();
@@ -133,6 +135,8 @@ void Go2RobotInterface::go_to_configuration_aux(
 
   // Sleep for a second to allow the robot to stabilise
   rclcpp::sleep_for(std::chrono::seconds(1));
+
+  auto start_q = state_q_;
 
   // Interpolate the joint positions
   while (rclcpp::ok()) {
@@ -150,22 +154,18 @@ void Go2RobotInterface::go_to_configuration_aux(
     // Interpolate the joint positions
     std::array<float, 12> q_step{};
     for (size_t source_idx = 0; source_idx < 12; source_idx++) {
-      q_step[source_idx] = state_q_[source_idx] +
-                           alpha * (q_des[source_idx] - state_q_[source_idx]);
+      q_step[source_idx] = start_q[source_idx] +
+                           alpha * (q_des[source_idx] - start_q[source_idx]);
     }
 
-    std::cout << "q_state: " << std::endl;
+    std::cout << "q_state --- q_step: " << std::endl;
     for (size_t i = 0; i < 12; i++) {
-      std::cout << i << ": " << state_q_[i] << std::endl;
+      std::cout << i << ": " << state_q_[i] << " ---- " << q_step[i] << std::endl;
     }
     std::cout << std::endl;
 
     // Send the command
-    if (is_safe_) {
-      send_command_aux(q_step, zeroes, zeroes, kp_array, kd_array);
-    } else {
-      throw std::runtime_error("Robot is not safe, cannot send command!");
-    }
+    send_command_aux(q_step, zeroes, zeroes, kp_array, kd_array);
 
     // Sleep for a while
     rate.sleep();
@@ -187,6 +187,9 @@ void Go2RobotInterface::go_to_configuration_aux(
 
 void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des,
                                             float duration_s) {
+  auto msg = std_msgs::msg::Bool();
+  msg.data = true;
+  watchdog_publisher_->publish(msg);
   // Run aux in a separate thread
   std::thread t(&Go2RobotInterface::go_to_configuration_aux, this, q_des,
                 duration_s);

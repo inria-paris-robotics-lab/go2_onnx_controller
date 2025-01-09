@@ -153,9 +153,9 @@ class Go2RobotInterface {
   rclcpp::Node &node_;
 
   // Safety flags
-  bool is_ready_ =
+  volatile bool is_ready_ =
       false;  ///< True if the robot has been successfully initialised.
-  bool is_safe_ = true;  ///< True if it is safe to publish commands.
+  volatile bool is_safe_ = true;  ///< True if it is safe to publish commands.
 
   // Robot state
   // Inertial state
