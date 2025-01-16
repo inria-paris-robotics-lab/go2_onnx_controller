@@ -122,10 +122,10 @@ void Go2RobotInterface::go_to_configuration_aux(
 
   // Kp and Kd arrays
   std::array<float, 12> kp_array{};
-  std::fill(kp_array.begin(), kp_array.end(), 20.0);
+  std::fill(kp_array.begin(), kp_array.end(), 150.0);
 
   std::array<float, 12> kd_array{};
-  std::fill(kd_array.begin(), kd_array.end(), 0.0);
+  std::fill(kd_array.begin(), kd_array.end(), 1.0);
 
   // Get the current time
   auto start_time = node_.now();
@@ -147,9 +147,12 @@ void Go2RobotInterface::go_to_configuration_aux(
     float alpha = current_time.seconds() / duration_s;
 
     // Check if the interpolation is complete
-    if (alpha >= 1.0) {
+    if (alpha >= 1.5) {
+      std::cout << "TIME EXCEEDED WE ARE BREAKING!!!!!! " << std::endl;
       break;
     }
+
+    alpha = alpha > 1.0 ? 1.0 : alpha;
 
     // Interpolate the joint positions
     std::array<float, 12> q_step{};

@@ -79,7 +79,7 @@ ONNXController::ONNXController()
   for (size_t i = 0; i < 12; i++) {
     q_des[i] = q0_[i];
   }
-  robot_interface_->go_to_configuration(q_des, 10.0);
+  robot_interface_->go_to_configuration(q_des, 5.0);
 }
 
 void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
