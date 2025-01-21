@@ -2,14 +2,19 @@
 
 #include <iostream>
 
-ONNXActor::ONNXActor(const std::string& model_path, OrtLoggingLevel log_level)
+ONNXActor::ONNXActor(const std::string& model_path,
+                     const std::shared_ptr<std::vector<float>> observation,
+                     const std::shared_ptr<std::vector<float>> action,
+                     OrtLoggingLevel log_level)
     : log_level_(log_level),
       env_(log_level, "ONNXActor"),
       model_path_(model_path),
       memory_info_(
           Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault)),
       run_options_(nullptr),
-      session_(env_, model_path.c_str(), Ort::SessionOptions{nullptr}) {
+      session_(env_, model_path.c_str(), Ort::SessionOptions{nullptr}),
+      observation_(observation),
+      action_(action) {
   // Get input and output shapes from model
   Ort::AllocatorWithDefaultOptions allocator;
 
@@ -24,31 +29,17 @@ ONNXActor::ONNXActor(const std::string& model_path, OrtLoggingLevel log_level)
                       .GetTensorTypeAndShapeInfo()
                       .GetShape();  // Likely {1, 12}
 
-  observation_ = std::vector<float>(input_shape_.at(1), 0.0);
-  action_ = std::vector<float>(output_shape_.at(1), 0.0);
-
   // Define input and output tensors which wrap the input and output buffers
   input_tensor_ = std::make_unique<Ort::Value>(Ort::Value::CreateTensor<float>(
-      memory_info_, observation_.data(), observation_.size(),
+      memory_info_, observation_->data(), input_shape_.at(1),
       input_shape_.data(), input_shape_.size()));
 
   output_tensor_ = std::make_unique<Ort::Value>(Ort::Value::CreateTensor<float>(
-      memory_info_, action_.data(), action_.size(), output_shape_.data(),
+      memory_info_, action_->data(), output_shape_.at(1), output_shape_.data(),
       output_shape_.size()));
 };
 
-void ONNXActor::observe(const std::vector<float>& obs) {
-  // Check if observation size matches input shape
-  if (obs.size() != input_shape_.at(1)) {
-    throw std::runtime_error(
-        "Observation size does not match the expected shape.");
-  }
-
-  // Copy observation to internal buffer
-  std::copy(obs.begin(), obs.end(), observation_.begin());
-}
-
-void ONNXActor::act(std::vector<float>& action) {
+void ONNXActor::act() {
   // Check if observation size matches input shape
   const char* cstr_in = input_name_.c_str();
   const char* const* input_names = &cstr_in;
@@ -58,10 +49,6 @@ void ONNXActor::act(std::vector<float>& action) {
 
   session_.Run(run_options_, input_names, input_tensor_.get(), 1, output_names,
                output_tensor_.get(), 1);
-
-  // Copy action to output buffer
-  action.resize(output_shape_.at(1));
-  std::copy(action_.begin(), action_.end(), action.begin());
 }
 
 void ONNXActor::print_model_info() {
