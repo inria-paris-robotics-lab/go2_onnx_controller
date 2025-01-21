@@ -51,6 +51,15 @@ void ONNXActor::act() {
                output_tensor_.get(), 1);
 }
 
+bool ONNXActor::check_dims() {
+  bool result = true;
+
+  result &= observation_->size() == input_shape_.at(1);
+  result &= action_->size() == output_shape_.at(1);
+
+  return result;
+}
+
 void ONNXActor::print_model_info() {
   std::cout << "Number of model inputs: " << session_.GetInputCount()
             << std::endl;

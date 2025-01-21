@@ -44,6 +44,11 @@ class ONNXActor {
    */
   void print_model_info();
 
+  /**
+   * @brief Check that both observation and action have the correct dimensions.
+   */
+  bool check_dims();
+
  private:
   OrtLoggingLevel log_level_;  ///< Logging level for ONNX Runtime.
   Ort::Env env_;               ///< ONNX Runtime environment.
