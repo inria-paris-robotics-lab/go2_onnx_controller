@@ -18,11 +18,8 @@ int main() {
 
   std::string model_path = home + "/.local/share/.onnx-actor/model.onnx";
 
-  std::shared_ptr<std::vector<float>> observation =
-      std::make_shared<std::vector<float>>(45, 2.0);
-
-  std::shared_ptr<std::vector<float>> action =
-      std::make_shared<std::vector<float>>(12, 0.0);
+  std::vector<float> observation(45, 0.0);
+  std::vector<float> action(12, 0.0);
 
   ONNXActor actor(model_path, observation, action);
   actor.print_model_info();
@@ -30,9 +27,9 @@ int main() {
 
   // Print the action
   std::cout << "Action: [";
-  for (size_t i = 0; i < action->size(); ++i) {
-    std::cout << action->data()[i];
-    if (i < action->size() - 1) {
+  for (size_t i = 0; i < action.size(); ++i) {
+    std::cout << action[i];
+    if (i < action.size() - 1) {
       std::cout << ",  ";
     }
   }

@@ -1,10 +1,11 @@
 #include "onnx_actor.hpp"
 
 #include <iostream>
+#include <span>
 
 ONNXActor::ONNXActor(const std::string& model_path,
-                     const std::shared_ptr<std::vector<float>> observation,
-                     const std::shared_ptr<std::vector<float>> action,
+                     const std::span<float> observation,
+                     const std::span<float> action,
                      OrtLoggingLevel log_level)
     : log_level_(log_level),
       env_(log_level, "ONNXActor"),
@@ -31,11 +32,11 @@ ONNXActor::ONNXActor(const std::string& model_path,
 
   // Define input and output tensors which wrap the input and output buffers
   input_tensor_ = std::make_unique<Ort::Value>(Ort::Value::CreateTensor<float>(
-      memory_info_, observation_->data(), input_shape_.at(1),
+      memory_info_, observation_.data(), input_shape_.at(1),
       input_shape_.data(), input_shape_.size()));
 
   output_tensor_ = std::make_unique<Ort::Value>(Ort::Value::CreateTensor<float>(
-      memory_info_, action_->data(), output_shape_.at(1), output_shape_.data(),
+      memory_info_, action_.data(), output_shape_.at(1), output_shape_.data(),
       output_shape_.size()));
 };
 
@@ -54,8 +55,8 @@ void ONNXActor::act() {
 bool ONNXActor::check_dims() {
   bool result = true;
 
-  result &= observation_->size() == input_shape_.at(1);
-  result &= action_->size() == output_shape_.at(1);
+  result &= observation_.size() == input_shape_.at(1);
+  result &= action_.size() == output_shape_.at(1);
 
   return result;
 }

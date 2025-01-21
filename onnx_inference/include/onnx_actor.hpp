@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -15,8 +16,8 @@ class ONNXActor {
   /**
    * @brief Constructor for ONNXActor.
    * @param model_path Path to the ONNX model file.
-   * @param observation_ptr Pointer to the observation buffer.
-   * @param action_ptr Pointer to the action buffer.
+   * @param observation Span of the observation buffer.
+   * @param action Span of the action buffer.
    * @param log_level Logging level for ONNX Runtime (default:
    * ORT_LOGGING_LEVEL_WARNING).
    *
@@ -24,9 +25,8 @@ class ONNXActor {
    * ensure that the buffers are not deallocated while the ONNXActor is
    * running.
    */
-  ONNXActor(const std::string& model_path,
-            const std::shared_ptr<std::vector<float>> observation,
-            const std::shared_ptr<std::vector<float>> action,
+  ONNXActor(const std::string& model_path, const std::span<float> observation,
+            const std::span<float> action,
             OrtLoggingLevel log_level = ORT_LOGGING_LEVEL_WARNING);
 
   /**
@@ -54,9 +54,8 @@ class ONNXActor {
   Ort::Env env_;               ///< ONNX Runtime environment.
   Ort::Session session_;       ///< ONNX Runtime session for model inference.
 
-  std::shared_ptr<std::vector<float>>
-      observation_;  ///< Buffer for storing observations.
-  std::shared_ptr<std::vector<float>> action_;  ///< Buffer for storing actions.
+  const std::span<float> observation_;  ///< Buffer for storing observations.
+  const std::span<float> action_;       ///< Buffer for storing actions.
 
   Ort::MemoryInfo memory_info_;  ///< Memory information for ONNX Runtime.
   Ort::RunOptions run_options_;  ///< Run options for ONNX Runtime.
