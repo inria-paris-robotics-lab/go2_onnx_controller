@@ -33,9 +33,10 @@ std::string get_model_path() {
 ONNXController::ONNXController()
     : Node("onnx_controller"),
       joy_(std::make_shared<sensor_msgs::msg::Joy>()),
-      actor_(std::make_unique<ONNXActor>(get_model_path())),
       action_(12, 0.0),
       observation_(45, 0.0) {
+
+  actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
   robot_interface_ =
       std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
@@ -160,8 +161,7 @@ void ONNXController::publish() {
 
   // Run the ONNX model
   prepare_observation();
-  actor_->observe(observation_);
-  actor_->act(action_);
+  actor_->act();
 
   // Print observation and action
   print_vecs();
