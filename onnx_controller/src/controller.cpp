@@ -85,35 +85,6 @@ void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
   joy_ = msg;
 }
 
-void ONNXController::prepare_observation() {
-  // Rotate the observation array to the left
-  std::shift_left(observation_.begin(), observation_.end(), kDimObs);
-
-  auto offset = observation_.end() - kDimObs;
-
-  /*
-  std::copy(imu_lin_acc_.begin(), imu_lin_acc_.end(), offset);
-  offset += imu_lin_acc_.size();
-
-  std::copy(imu_ang_vel_.begin(), imu_ang_vel_.end(), offset);
-  offset += imu_ang_vel_.size();
-
-  std::copy(vel_cmd_.begin(), vel_cmd_.end(), offset);
-  offset += vel_cmd_.size();
-
-  std::copy(q_.begin(), q_.end(), offset);
-  offset += q_.size();
-
-  std::copy(dq_.begin(), dq_.end(), offset);
-  offset += dq_.size();
-
-  std::copy(action_.begin(), action_.end(), offset);
-  offset += action_.size();
-  */
-
-  std::tuple mytuple(imu_lin_acc_, imu_ang_vel_, vel_cmd_, q_, dq_, action_);
-}
-
 void ONNXController::print_vecs() {
   // Print observation and action
   std::cout << "Observation: " << std::endl;
@@ -166,7 +137,7 @@ void ONNXController::publish() {
   }
 
   // Run the ONNX model
-  prepare_observation();
+  prepare_observation(imu_lin_acc_, imu_ang_vel_, vel_cmd_, q_, dq_, action_);
   actor_->act();
 
   // Print observation and action

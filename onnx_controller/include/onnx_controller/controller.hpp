@@ -40,15 +40,16 @@ class ONNXController : public rclcpp::Node {
    * linear acceleration, angular velocity, commanded velocity, joint positions,
    * joint velocities, and previous action.
    */
-  void prepare_observation();
+  template <typename Head, typename... Tail>
+  void prepare_observation(const Head &head, const Tail &...tail) {
+    // Rotate the observation array to the left, and copy the new observation
+    std::shift_left(observation_.begin(), observation_.end(), head.size());
+    std::copy(head.begin(), head.end(), observation_.end() - head.size());
 
-  
-  /**
-   * @brief Inject a small array into the observation buffer.
-   */
-  template <size_t N>
-  void inject_observation(const std::array<float, N> &vec, size_t offset) {
-    std::copy(vec.begin(), vec.end(), offset);
+    // Recurse if there are more observations
+    if constexpr (sizeof...(tail) > 0) {
+      prepare_observation(tail...);
+    }
   }
 
   /**
@@ -98,8 +99,9 @@ class ONNXController : public rclcpp::Node {
   std::array<float, dim_dof> dq_{};  ///< Joint velocities
 
   // Control state
-  std::array<float, dim_dof> action_{};       ///< Action to be taken, of size 12
-  std::array<float, kDimObs * 3> observation_{};  ///< Observation array, with a 3-step history
+  std::array<float, dim_dof> action_{};  ///< Action to be taken, of size 12
+  std::array<float, kDimObs * 3>
+      observation_{};  ///< Observation array, with a 3-step history
 
   //! Initial pose (in radians, Isaac order)
   static constexpr std::array<const float, 12> q0_ = {
