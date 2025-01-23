@@ -38,12 +38,12 @@ std::array<std::uint8_t, N> map_indices(std::array<T, N> source,
   return permutation;
 }
 
-constexpr size_t dim_dof = 12;
+constexpr size_t kDimDOF = 12;
 
 class Go2RobotInterface {
  public:
   Go2RobotInterface(rclcpp::Node &node,
-                    const std::array<std::string_view, dim_dof> source_joint_names);
+                    const std::array<std::string_view, kDimDOF> source_joint_names);
 
   /**
    * @brief Sends motor commands to the `/lowstate` topic.
@@ -60,11 +60,11 @@ class Go2RobotInterface {
    * @param Kp Proportional coefficients,
    * @param Kd derivative coefficients.
    */
-  void send_command(const std::array<float, dim_dof> &q,
-                    const std::array<float, dim_dof> &v,
-                    const std::array<float, dim_dof> &tau,
-                    const std::array<float, dim_dof> &kp,
-                    const std::array<float, dim_dof> &kd);
+  void send_command(const std::array<float, kDimDOF> &q,
+                    const std::array<float, kDimDOF> &v,
+                    const std::array<float, kDimDOF> &tau,
+                    const std::array<float, kDimDOF> &kp,
+                    const std::array<float, kDimDOF> &kd);
 
   void start_async(const std::vector<float> &q_start, bool goto_config = true);
 
@@ -81,19 +81,19 @@ class Go2RobotInterface {
    * @param q_des_ The desired joint positions.
    * @param duration_ms The duration of the interpolation in seconds.
    */
-  void go_to_configuration(const std::array<float, dim_dof> &q_des_,
+  void go_to_configuration(const std::array<float, kDimDOF> &q_des_,
                            float duration_s);
 
-  void go_to_configuration_aux(const std::array<float, dim_dof> &q_des_,
+  void go_to_configuration_aux(const std::array<float, kDimDOF> &q_des_,
                                float duration_s);
 
   // Getters
   bool is_ready() const { return is_ready_; }
   bool is_safe() const { return is_safe_; }
-  const std::array<float, dim_dof> &get_q() const { return state_q_; }
-  const std::array<float, dim_dof> &get_dq() const { return state_dq_; }
-  const std::array<float, dim_dof> &get_ddq() const { return state_ddq_; }
-  const std::array<float, dim_dof> &get_tau() const { return state_tau_; }
+  const std::array<float, kDimDOF> &get_q() const { return state_q_; }
+  const std::array<float, kDimDOF> &get_dq() const { return state_dq_; }
+  const std::array<float, kDimDOF> &get_ddq() const { return state_ddq_; }
+  const std::array<float, kDimDOF> &get_tau() const { return state_tau_; }
   const std::array<float, 3> &get_lin_acc() const { return imu_lin_acc_; }
   const std::array<float, 3> &get_ang_vel() const { return imu_ang_vel_; }
 
@@ -110,7 +110,7 @@ class Go2RobotInterface {
    * - `bandwidth = 0`,
    * - `fan = {0, 0}`,
    * - `reserve = 0`,
-   * - `led` is a dim_dof-element array of zeros.
+   * - `led` is a kDimDOF-element array of zeros.
    */
   void initialize_command();
 
@@ -146,11 +146,11 @@ class Go2RobotInterface {
    * @param Kp Proportional coefficients,
    * @param Kd derivative coefficients.
    */
-  void send_command_aux(const std::array<float, dim_dof> &q,
-                        const std::array<float, dim_dof> &v,
-                        const std::array<float, dim_dof> &tau,
-                        const std::array<float, dim_dof> &kp,
-                        const std::array<float, dim_dof> &kd);
+  void send_command_aux(const std::array<float, kDimDOF> &q,
+                        const std::array<float, kDimDOF> &v,
+                        const std::array<float, kDimDOF> &tau,
+                        const std::array<float, kDimDOF> &kp,
+                        const std::array<float, kDimDOF> &kd);
   /// @brief The node handle
   rclcpp::Node &node_;
 
@@ -164,11 +164,11 @@ class Go2RobotInterface {
   std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
   std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
 
-  // Joint states (dim_dof joints)
-  std::array<float, dim_dof> state_q_{};    ///< Joint positions
-  std::array<float, dim_dof> state_dq_{};   ///< Joint velocities
-  std::array<float, dim_dof> state_ddq_{};  ///< Joint accelerations
-  std::array<float, dim_dof> state_tau_{};  ///< Joint torques (Nm)
+  // Joint states (kDimDOF joints)
+  std::array<float, kDimDOF> state_q_{};    ///< Joint positions
+  std::array<float, kDimDOF> state_dq_{};   ///< Joint velocities
+  std::array<float, kDimDOF> state_ddq_{};  ///< Joint accelerations
+  std::array<float, kDimDOF> state_tau_{};  ///< Joint torques (Nm)
 
   // Messages
   unitree_go::msg::LowState::SharedPtr
@@ -196,15 +196,15 @@ class Go2RobotInterface {
       parameter_callback_handle_;  ///< Handle for the parameter callback
 
   // Joint names in the order that the controller is expecting them.
-  const std::array<std::string_view, dim_dof> source_joint_names_;
+  const std::array<std::string_view, kDimDOF> source_joint_names_;
 
   // Joint names in the order that the robot is expecting them.
-  static constexpr std::array<std::string_view, dim_dof> target_joint_names_ = {
+  static constexpr std::array<std::string_view, kDimDOF> target_joint_names_ = {
       "FR_hip_joint",   "FR_thigh_joint", "FR_calf_joint",  "FL_hip_joint",
       "FL_thigh_joint", "FL_calf_joint",  "RR_hip_joint",   "RR_thigh_joint",
       "RR_calf_joint",  "RL_hip_joint",   "RL_thigh_joint", "RL_calf_joint"};
 
   // Map indices between source and target joint orderings
-  const std::array<uint8_t, dim_dof> idx_source_in_target_;
-  const std::array<uint8_t, dim_dof> idx_target_in_source_;
+  const std::array<uint8_t, kDimDOF> idx_source_in_target_;
+  const std::array<uint8_t, kDimDOF> idx_target_in_source_;
 };

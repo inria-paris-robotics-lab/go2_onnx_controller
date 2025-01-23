@@ -95,11 +95,11 @@ class ONNXController : public rclcpp::Node {
   std::array<float, 3> vel_cmd_{};  ///< Linear velocity command
 
   // Proprioceptive state
-  std::array<float, dim_dof> q_{};   ///< Joint positions
-  std::array<float, dim_dof> dq_{};  ///< Joint velocities
+  std::array<float, kDimDOF> q_{};   ///< Joint positions
+  std::array<float, kDimDOF> dq_{};  ///< Joint velocities
 
   // Control state
-  std::array<float, dim_dof> action_{};  ///< Action to be taken, of size 12
+  std::array<float, kDimDOF> action_{};  ///< Action to be taken, of size 12
   std::array<float, kDimObs * 3>
       observation_{};  ///< Observation array, with a 3-step history
 
