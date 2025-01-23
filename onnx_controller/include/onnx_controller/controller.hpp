@@ -11,6 +11,8 @@
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
 
+constexpr size_t kDimObs = 45;
+
 class ONNXController : public rclcpp::Node {
  public:
   ONNXController();
@@ -39,6 +41,15 @@ class ONNXController : public rclcpp::Node {
    * joint velocities, and previous action.
    */
   void prepare_observation();
+
+  
+  /**
+   * @brief Inject a small array into the observation buffer.
+   */
+  template <size_t N>
+  void inject_observation(const std::array<float, N> &vec, size_t offset) {
+    std::copy(vec.begin(), vec.end(), offset);
+  }
 
   /**
    * @brief Prints the observation and action vectors.
@@ -83,12 +94,12 @@ class ONNXController : public rclcpp::Node {
   std::array<float, 3> vel_cmd_{};  ///< Linear velocity command
 
   // Proprioceptive state
-  std::array<float, 12> q_{};   ///< Joint positions
-  std::array<float, 12> dq_{};  ///< Joint velocities
+  std::array<float, dim_dof> q_{};   ///< Joint positions
+  std::array<float, dim_dof> dq_{};  ///< Joint velocities
 
   // Control state
-  std::vector<float> action_;       ///< Action to be taken, of size 12
-  std::vector<float> observation_;  ///< Observation vector, of size 45
+  std::array<float, dim_dof> action_{};       ///< Action to be taken, of size 12
+  std::array<float, kDimObs * 3> observation_{};  ///< Observation array, with a 3-step history
 
   //! Initial pose (in radians, Isaac order)
   static constexpr std::array<const float, 12> q0_ = {

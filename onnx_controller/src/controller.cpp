@@ -1,5 +1,6 @@
 #include "controller.hpp"
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <cmath>
@@ -31,15 +32,11 @@ std::string get_model_path() {
 }
 
 ONNXController::ONNXController()
-    : Node("onnx_controller"),
-      joy_(std::make_shared<sensor_msgs::msg::Joy>()),
-      action_(12, 0.0),
-      observation_(45, 0.0) {
-
+    : Node("onnx_controller"), joy_(std::make_shared<sensor_msgs::msg::Joy>()) {
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
-  robot_interface_ =
-      std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
+      robot_interface_ =
+          std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
 
   // Set parameters
   this->declare_parameter("kp", kp_);
@@ -89,23 +86,32 @@ void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
 }
 
 void ONNXController::prepare_observation() {
-  observation_.clear();  // Clear the observation vector
+  // Rotate the observation array to the left
+  std::shift_left(observation_.begin(), observation_.end(), kDimObs);
 
-  // Add the linear acceleration and angular velocity
-  observation_.insert(observation_.end(), imu_lin_acc_.begin(),
-                      imu_lin_acc_.end());
-  observation_.insert(observation_.end(), imu_ang_vel_.begin(),
-                      imu_ang_vel_.end());
+  auto offset = observation_.end() - kDimObs;
 
-  // Add the commanded velocity
-  observation_.insert(observation_.end(), vel_cmd_.begin(), vel_cmd_.end());
+  /*
+  std::copy(imu_lin_acc_.begin(), imu_lin_acc_.end(), offset);
+  offset += imu_lin_acc_.size();
 
-  // Add the joint positions and velocities
-  observation_.insert(observation_.end(), q_.begin(), q_.end());
-  observation_.insert(observation_.end(), dq_.begin(), dq_.end());
+  std::copy(imu_ang_vel_.begin(), imu_ang_vel_.end(), offset);
+  offset += imu_ang_vel_.size();
 
-  // Add the previous action
-  observation_.insert(observation_.end(), action_.begin(), action_.end());
+  std::copy(vel_cmd_.begin(), vel_cmd_.end(), offset);
+  offset += vel_cmd_.size();
+
+  std::copy(q_.begin(), q_.end(), offset);
+  offset += q_.size();
+
+  std::copy(dq_.begin(), dq_.end(), offset);
+  offset += dq_.size();
+
+  std::copy(action_.begin(), action_.end(), offset);
+  offset += action_.size();
+  */
+
+  std::tuple mytuple(imu_lin_acc_, imu_ang_vel_, vel_cmd_, q_, dq_, action_);
 }
 
 void ONNXController::print_vecs() {
