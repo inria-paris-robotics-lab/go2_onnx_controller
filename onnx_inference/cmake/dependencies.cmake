@@ -37,7 +37,7 @@ macro(onnx_dependencies)
         IMPORTED_LOCATION ${onnxruntime_SOURCE_DIR}/lib/${LIBRARY_NAME}
         INTERFACE_INCLUDE_DIRECTORIES ${onnxruntime_SOURCE_DIR}/include/
     )
-    # Install the library
+    # Install the library
     install(FILES ${ONNXRUNTIME_LIBS} DESTINATION lib)
 
     # Install the headers
