@@ -6,6 +6,16 @@
 #include "onnx_actor.hpp"
 
 // constexpr unsigned int inputSize = 45;
+void print_vec(const std::span<float> &vec, const std::string &name){
+    std::cout << name << ": [";
+    for (size_t i = 0; i < vec.size(); ++i) {
+        std::cout << vec[i];
+        if (i < vec.size() - 1) {
+            std::cout << ",  ";
+        }
+    }
+    std::cout << "]" << std::endl;
+}
 
 int main() {
   Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
@@ -26,14 +36,7 @@ int main() {
   actor.act();
 
   // Print the action
-  std::cout << "Action: [";
-  for (size_t i = 0; i < action.size(); ++i) {
-    std::cout << action[i];
-    if (i < action.size() - 1) {
-      std::cout << ",  ";
-    }
-  }
-  std::cout << "]" << std::endl;
+  print_vec(action, "Action");
 
   return 0;
 }
