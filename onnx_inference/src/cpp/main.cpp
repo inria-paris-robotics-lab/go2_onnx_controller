@@ -1,7 +1,6 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
-#include <vector>
 
 #include "onnx_actor.hpp"
 
