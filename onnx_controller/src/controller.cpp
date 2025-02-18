@@ -58,10 +58,6 @@ ONNXController::ONNXController()
   joy_subscription_ =
       this->create_subscription<sensor_msgs::msg::Joy>("/joy", 1, joy_callback);
 
-  // Set the timer to publish at 50 Hz
-  timer_ =
-      this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
-
   // Print the ONNXActor
   actor_->print_model_info();
 
@@ -78,6 +74,10 @@ ONNXController::ONNXController()
     q_des[i] = q0_[i];
   }
   robot_interface_->go_to_configuration(q_des, 5.0);
+
+  // Set the timer to publish at 50 Hz
+  timer_ =
+      this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
 }
 
 void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
@@ -111,11 +111,17 @@ void ONNXController::print_vecs() {
 }
 
 void ONNXController::publish() {
-  if (!robot_interface_->is_ready() || !robot_interface_->is_safe()) {
+  if (!robot_interface_->is_ready()) {
     RCLCPP_WARN(this->get_logger(),
-                "ONNXController::publish() Robot is not ready or safe, cannot "
+                "ONNXController::publish() Robot is not ready, cannot "
                 "send command!");
     return;
+  }
+  if (!robot_interface_->is_safe()) {
+    RCLCPP_WARN(this->get_logger(),
+                "ONNXController::publish() Robot is not safe, cannot "
+                "send command!");
+    return
   }
 
   if (joy_ && !joy_->axes.empty()) {
