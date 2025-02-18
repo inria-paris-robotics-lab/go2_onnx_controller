@@ -10,12 +10,8 @@
 
 #include "motor_crc.hpp"
 #include "onnx_actor.hpp"
-#include "rcl_interfaces/msg/parameter_descriptor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "robot_interface.hpp"
-#include "unitree_go/msg/low_cmd.hpp"
-#include "unitree_go/msg/low_state.hpp"
-#include "unitree_go/msg/motor_cmd.hpp"
 
 using namespace std::chrono_literals;
 
