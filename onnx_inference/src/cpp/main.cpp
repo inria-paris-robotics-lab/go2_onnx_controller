@@ -27,7 +27,7 @@ int main() {
 
   std::string model_path = home + "/.local/share/.onnx-actor/model.onnx";
 
-  std::array<float, 45> observation{0.0};
+  std::array<float, 52> observation{0.0};
   std::array<float, 12> action{0.0};
 
   ONNXActor actor(model_path, observation, action);
