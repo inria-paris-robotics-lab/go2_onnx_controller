@@ -85,10 +85,16 @@ class ONNXController : public rclcpp::Node {
       robot_interface_;               ///< Robot interface object
   std::unique_ptr<ONNXActor> actor_;  ///< ONNXActor object
 
+  // Gravity vector
+  static constexpr std::array<float, 3> gravity_w_{0., 0., -1.}; ///< Gravity direction in the world
+  std::array<float, 3> gravity_b_{}; ///< Gravity vector in the body frame
+
   // Inertial state
+  std::array<float, 4> quaternion_{}; ///< Orientation (w, x, y, z)
   std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
   std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
 
+  // Velocity command
   std::array<float, 3> vel_cmd_{};  ///< Linear velocity command
 
   // Proprioceptive state

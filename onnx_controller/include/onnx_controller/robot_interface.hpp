@@ -94,6 +94,7 @@ class Go2RobotInterface {
   const std::array<float, kDimDOF> &get_dq() const { return state_dq_; }
   const std::array<float, kDimDOF> &get_ddq() const { return state_ddq_; }
   const std::array<float, kDimDOF> &get_tau() const { return state_tau_; }
+  const std::array<float, 4> &get_quaternion() const { return quaternion_; }
   const std::array<float, 3> &get_lin_acc() const { return imu_lin_acc_; }
   const std::array<float, 3> &get_ang_vel() const { return imu_ang_vel_; }
 
@@ -161,6 +162,7 @@ class Go2RobotInterface {
 
   // Robot state
   // Inertial state
+  std::array<float, 4> quaternion_{}; ///< Orientation (w, x, y, z)
   std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
   std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
 

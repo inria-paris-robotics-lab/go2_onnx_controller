@@ -58,7 +58,7 @@ ONNXController::ONNXController()
   actor_->print_model_info();
 
   // Print vectors
-  print_vecs();
+  // print_vecs();
 
   RCLCPP_INFO(this->get_logger(),
               "ONNXController initialised, going to initial "
@@ -117,7 +117,7 @@ void ONNXController::publish() {
     RCLCPP_WARN(this->get_logger(),
                 "ONNXController::publish() Robot is not safe, cannot "
                 "send command!");
-    return
+    return;
   }
 
   if (joy_ && !joy_->axes.empty()) {
