@@ -3,6 +3,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -97,6 +98,7 @@ class Go2RobotInterface {
   const std::array<float, 4> &get_quaternion() const { return quaternion_; }
   const std::array<float, 3> &get_lin_acc() const { return imu_lin_acc_; }
   const std::array<float, 3> &get_ang_vel() const { return imu_ang_vel_; }
+  const std::array<uint16_t, 4> &get_forces() const { return foot_forces_; }
 
  private:
   /**
@@ -171,6 +173,9 @@ class Go2RobotInterface {
   std::array<float, kDimDOF> state_dq_{};   ///< Joint velocities
   std::array<float, kDimDOF> state_ddq_{};  ///< Joint accelerations
   std::array<float, kDimDOF> state_tau_{};  ///< Joint torques (Nm)
+
+  // Foot contacts
+  std::array<uint16_t, 4> foot_forces_{}; ///< Foot contact forces (int)
 
   // Messages
   unitree_go::msg::LowState::SharedPtr

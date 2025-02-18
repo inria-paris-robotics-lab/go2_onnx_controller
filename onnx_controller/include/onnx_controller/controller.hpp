@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -10,7 +11,7 @@
 #include "robot_interface.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
-constexpr size_t kDimObs = 45;
+constexpr size_t kDimObs = 52;
 
 class ONNXController : public rclcpp::Node {
  public:
@@ -107,6 +108,9 @@ class ONNXController : public rclcpp::Node {
   std::array<float, kDimDOF> action_{};  ///< Action to be taken, of size 12
   std::array<float, kDimObs * 3>
       observation_{};  ///< Observation array, with a 3-step history
+
+  // Foot contacts
+  std::array<uint16_t, 4> foot_forces_{1, 1, 1, 1};
 
   //! Initial pose (in radians, Isaac order)
   static constexpr std::array<const float, 12> q0_ = {

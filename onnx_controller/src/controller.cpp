@@ -4,6 +4,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -127,13 +128,23 @@ void ONNXController::publish() {
     vel_cmd_[2] = joy_->axes[3] * joy_->axes[1];
   }
 
-  // Get the current state
+  // Project the gravity into base frame
   auto quat = robot_interface_->get_quaternion();
   quaternion_ = Eigen::Quaternion(quat[0], quat[1], quat[2], quat[3]);
+  Eigen::Map<const Eigen::Vector3f> vec(gravity_w_.data());
+  Eigen::Map<Eigen::Vector3f> gb_map(gravity_b_.data());
+  gb_map = quaternion_.inverse() * vec;
+
+  // Get the current state
   q_ = robot_interface_->get_q();
   dq_ = robot_interface_->get_dq();
   imu_lin_acc_ = robot_interface_->get_lin_acc();
   imu_ang_vel_ = robot_interface_->get_ang_vel();
+
+  // Read foot contact state
+  for (size_t i = 0; i < 4; i++) {
+	  foot_forces_[i] = robot_interface_->get_forces()[i] >= 1;
+  }
 
   // Subtract the q0_ initial pose from the joint positions
   for (size_t i = 0; i < 12; i++) {
@@ -141,7 +152,7 @@ void ONNXController::publish() {
   }
 
   // Run the ONNX model
-  prepare_observation(imu_lin_acc_, imu_ang_vel_, vel_cmd_, q_, dq_, action_);
+  prepare_observation(gravity_b_, imu_lin_acc_, imu_ang_vel_, vel_cmd_, q_, dq_, action_, foot_forces_);
   actor_->act();
 
   // Print observation and action
