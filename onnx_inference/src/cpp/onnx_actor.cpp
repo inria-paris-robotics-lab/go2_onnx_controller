@@ -62,10 +62,8 @@ bool ONNXActor::check_dims() {
 }
 
 void ONNXActor::print_model_info() {
-  std::cout << "Number of model inputs: " << session_.GetInputCount()
-            << std::endl;
-  std::cout << "Number of model outputs: " << session_.GetOutputCount()
-            << std::endl;
+  std::cout << "Input dimension: " << input_shape_.at(1) << std::endl;
+  std::cout << "Output dimension: " << output_shape_.at(1) << std::endl;
   std::cout << "Input name: " << input_name_ << std::endl;
   std::cout << "Output name: " << output_name_ << std::endl;
 }
