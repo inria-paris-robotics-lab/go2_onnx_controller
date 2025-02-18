@@ -58,7 +58,7 @@ ONNXController::ONNXController()
   actor_->print_model_info();
 
   // Print vectors
-  // print_vecs();
+  print_vecs();
 
   RCLCPP_INFO(this->get_logger(),
               "ONNXController initialised, going to initial "
@@ -128,6 +128,8 @@ void ONNXController::publish() {
   }
 
   // Get the current state
+  auto quat = robot_interface_->get_quaternion();
+  quaternion_ = Eigen::Quaternion(quat[0], quat[1], quat[2], quat[3]);
   q_ = robot_interface_->get_q();
   dq_ = robot_interface_->get_dq();
   imu_lin_acc_ = robot_interface_->get_lin_acc();

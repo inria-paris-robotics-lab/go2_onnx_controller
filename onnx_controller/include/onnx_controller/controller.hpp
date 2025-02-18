@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 
+#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Geometry"
 #include "onnx_actor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "robot_interface.hpp"
@@ -90,7 +92,7 @@ class ONNXController : public rclcpp::Node {
   std::array<float, 3> gravity_b_{}; ///< Gravity vector in the body frame
 
   // Inertial state
-  std::array<float, 4> quaternion_{}; ///< Orientation (w, x, y, z)
+  Eigen::Quaternion<float> quaternion_{}; ///< Orientation (w, x, y, z)
   std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
   std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
 
