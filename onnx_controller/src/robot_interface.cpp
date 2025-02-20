@@ -100,8 +100,6 @@ void Go2RobotInterface::send_command_aux(const std::array<float, 12> &q,
       cmd_->motor_cmd[target_idx].kd = kd[source_idx];
     }
 
-    std::cout << "send_command_aux() ------------------" << std::endl;
-
     // CRC the command -- this is a checksum
     get_crc(*cmd_.get());
 
@@ -212,9 +210,11 @@ void Go2RobotInterface::consume_state(
     state_ddq_[source_idx] = state_->motor_state[target_idx].ddq;
     state_tau_[source_idx] = state_->motor_state[target_idx].tau_est;
   }
-  // Process the quaternion
+  // Process the quaternion and foot forces
   for (size_t i = 0; i < 4; i++) {
+    // Both RobotInterface and unitree /LowState use [w, x, y, z] quaternions
     quaternion_[i] = state_->imu_state.quaternion[i];
+    foot_forces_[i] = state_->foot_force[i];
   }
   // Process the IMU state
   for (size_t i = 0; i < 3; i++) {

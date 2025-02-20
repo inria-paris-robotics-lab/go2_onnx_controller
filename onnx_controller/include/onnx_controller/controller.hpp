@@ -106,8 +106,8 @@ class ONNXController : public rclcpp::Node {
 
   // Control state
   std::array<float, kDimDOF> action_{};  ///< Action to be taken, of size 12
-  std::array<float, kDimObs * 3>
-      observation_{};  ///< Observation array, with a 3-step history
+  std::array<float, kDimObs * 1>
+      observation_{};  ///< Observation array, with a 1-step history
 
   // Foot contacts
   std::array<uint16_t, 4> foot_forces_{1, 1, 1, 1};
