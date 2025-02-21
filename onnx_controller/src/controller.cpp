@@ -142,8 +142,9 @@ void ONNXController::publish() {
   imu_ang_vel_ = robot_interface_->get_ang_vel();
 
   // Read foot contact state
-  for (size_t i = 0; i < 4; i++) {
-	  foot_forces_[i] = robot_interface_->get_forces()[i] >= 1;
+  for (uint8_t i = 0; i < 4; i++) {
+    uint8_t mask = 1;
+    foot_forces_[i] = robot_interface_->get_forces()[mask ^ i] >= 22;
   }
 
   // Subtract the q0_ initial pose from the joint positions
