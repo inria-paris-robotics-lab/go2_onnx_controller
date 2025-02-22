@@ -12,15 +12,21 @@
 
 Go2RobotInterface::Go2RobotInterface(
     rclcpp::Node &node,
-    const std::array<std::string_view, 12> source_joint_names)
+    const std::array<std::string_view, 12> source_joint_names,
+	const std::array<std::string_view, 4> source_feet_names)
     : node_(node),
       state_(std::make_shared<unitree_go::msg::LowState>()),
       cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
       source_joint_names_(source_joint_names),
-      idx_source_in_target_(
+	  source_feet_names_(source_feet_names),
+      target_joint_idx_(
           map_indices(source_joint_names_, target_joint_names_)),
-      idx_target_in_source_(
-          map_indices(target_joint_names_, source_joint_names_)) {
+      source_joint_idx_(
+          map_indices(target_joint_names_, source_joint_names_)),
+      target_feet_idx_(
+		  map_indices(source_feet_names_, target_feet_names_)),
+      source_feet_idx_(
+		  map_indices(target_feet_names_, source_feet_names_)){
   // Set up publishers
   watchdog_publisher_ =
       node.create_publisher<std_msgs::msg::Bool>("/watchdog/arm", 10);
@@ -92,7 +98,7 @@ void Go2RobotInterface::send_command_aux(const std::array<float, 12> &q,
   } else {
     // Set the command
     for (size_t source_idx = 0; source_idx < 12; source_idx++) {
-      size_t target_idx = idx_source_in_target_[source_idx];
+      size_t target_idx = target_joint_idx_[source_idx];
       cmd_->motor_cmd[target_idx].q = q[source_idx];
       cmd_->motor_cmd[target_idx].dq = v[source_idx];
       cmd_->motor_cmd[target_idx].tau = tau[source_idx];
@@ -204,7 +210,7 @@ void Go2RobotInterface::consume_state(
 
   // Process the motor states
   for (size_t source_idx = 0; source_idx < 12; source_idx++) {
-    size_t target_idx = idx_source_in_target_[source_idx];
+    size_t target_idx = target_joint_idx_[source_idx];
     state_q_[source_idx] = state_->motor_state[target_idx].q;
     state_dq_[source_idx] = state_->motor_state[target_idx].dq;
     state_ddq_[source_idx] = state_->motor_state[target_idx].ddq;

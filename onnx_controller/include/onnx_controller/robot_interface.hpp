@@ -44,7 +44,8 @@ constexpr size_t kDimDOF = 12;
 class Go2RobotInterface {
  public:
   Go2RobotInterface(rclcpp::Node &node,
-                    const std::array<std::string_view, kDimDOF> source_joint_names);
+                    const std::array<std::string_view, kDimDOF> source_joint_names,
+                    const std::array<std::string_view, 4> source_feet_names);
 
   /**
    * @brief Sends motor commands to the `/lowstate` topic.
@@ -211,7 +212,18 @@ class Go2RobotInterface {
       "FL_thigh_joint", "FL_calf_joint",  "RR_hip_joint",   "RR_thigh_joint",
       "RR_calf_joint",  "RL_hip_joint",   "RL_thigh_joint", "RL_calf_joint"};
 
+  // Joint names in the order that the controller is expecting them.
+  const std::array<std::string_view, 4> source_feet_names_;
+
+  // Joint names in the order that the robot is expecting them.
+  static constexpr std::array<std::string_view, 4> target_feet_names_ = {
+      "FR", "FL", "RR", "RL"};
+  
   // Map indices between source and target joint orderings
-  const std::array<uint8_t, kDimDOF> idx_source_in_target_;
-  const std::array<uint8_t, kDimDOF> idx_target_in_source_;
+  const std::array<uint8_t, kDimDOF> target_joint_idx_;
+  const std::array<uint8_t, kDimDOF> source_joint_idx_;
+
+  // Map indices between source and target feet orderings
+  const std::array<uint8_t, 4> target_feet_idx_;
+  const std::array<uint8_t, 4> source_feet_idx_;
 };

@@ -33,7 +33,7 @@ ONNXController::ONNXController()
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
       robot_interface_ =
-          std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
+          std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_, isaac_feet_names_);
 
   // Set parameters
   this->declare_parameter("kp", kp_);
