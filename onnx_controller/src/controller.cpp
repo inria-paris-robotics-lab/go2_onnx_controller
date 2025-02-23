@@ -53,7 +53,7 @@ ONNXController::ONNXController()
   };
 
   joy_subscription_ =
-      this->create_subscription<sensor_msgs::msg::Joy>("/joy", 1, joy_callback);
+      this->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joy_callback);
 
   // Print the ONNXActor
   actor_->print_model_info();
@@ -143,8 +143,7 @@ void ONNXController::publish() {
 
   // Read foot contact state
   for (uint8_t i = 0; i < 4; i++) {
-    uint8_t mask = 1;
-    foot_forces_[i] = robot_interface_->get_forces()[mask ^ i] >= 22;
+    foot_forces_[i] = robot_interface_->get_forces()[i] >= 22;
   }
 
   // Subtract the q0_ initial pose from the joint positions

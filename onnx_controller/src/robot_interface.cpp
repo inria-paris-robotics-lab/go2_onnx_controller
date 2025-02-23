@@ -150,12 +150,7 @@ void Go2RobotInterface::go_to_configuration_aux(
     // Calculate the interpolation factor
     float alpha = current_time.seconds() / duration_s;
 
-    // Check if the interpolation is complete
-    if (alpha >= 1.5) {
-      std::cout << "TIME EXCEEDED WE ARE BREAKING!!!!!! " << std::endl;
-      break;
-    }
-
+    if(alpha > 1.5) break;
     alpha = alpha > 1.0 ? 1.0 : alpha;
 
     // Interpolate the joint positions
@@ -164,12 +159,6 @@ void Go2RobotInterface::go_to_configuration_aux(
       q_step[source_idx] = start_q[source_idx] +
                            alpha * (q_des[source_idx] - start_q[source_idx]);
     }
-
-    std::cout << "q_state --- q_step: " << std::endl;
-    for (size_t i = 0; i < 12; i++) {
-      std::cout << i << ": " << state_q_[i] << " ---- " << q_step[i] << std::endl;
-    }
-    std::cout << std::endl;
 
     // Send the command
     send_command_aux(q_step, zeroes, zeroes, kp_array, kd_array);
@@ -220,7 +209,9 @@ void Go2RobotInterface::consume_state(
   for (size_t i = 0; i < 4; i++) {
     // Both RobotInterface and unitree /LowState use [w, x, y, z] quaternions
     quaternion_[i] = state_->imu_state.quaternion[i];
-    foot_forces_[i] = state_->foot_force[i];
+
+    size_t foot_idx = target_feet_idx_[i];
+    foot_forces_[i] = state_->foot_force[foot_idx];
   }
   // Process the IMU state
   for (size_t i = 0; i < 3; i++) {
