@@ -12,6 +12,7 @@
 #include "sensor_msgs/msg/joy.hpp"
 
 constexpr size_t kDimObs = 52;
+constexpr size_t kHistory = 2;
 
 class ONNXController : public rclcpp::Node {
  public:
@@ -34,21 +35,20 @@ class ONNXController : public rclcpp::Node {
 
  private:
   /**
-   * @brief Populates the observation vector.
+   * @brief Populates the target buffer.
    *
-   * This function populates the observation vector `observation_` with the
-   * linear acceleration, angular velocity, commanded velocity, joint positions,
-   * joint velocities, and previous action.
+   * This function template populates the target buffer `target` with the
+   * given arrays.
    */
-  template <typename Head, typename... Tail>
-  void prepare_observation(const Head &head, const Tail &...tail) {
+  template <typename Target, typename Head, typename... Tail>
+  void populate_buffer(Target &target, const Head &head, const Tail &...tail) {
     // Rotate the observation array to the left, and copy the new observation
-    std::shift_left(observation_.begin(), observation_.end(), head.size());
-    std::copy(head.begin(), head.end(), observation_.end() - head.size());
+    std::shift_left(target.begin(), target.end(), head.size());
+    std::copy(head.begin(), head.end(), target.end() - head.size());
 
     // Recurse if there are more observations
     if constexpr (sizeof...(tail) > 0) {
-      prepare_observation(tail...);
+      populate_buffer(target, tail...);
     }
   }
 
@@ -106,11 +106,21 @@ class ONNXController : public rclcpp::Node {
 
   // Control state
   std::array<float, kDimDOF> action_{};  ///< Action to be taken, of size 12
-  std::array<float, kDimObs * 1>
+  std::array<float, kDimObs * 2>
       observation_{};  ///< Observation array, with a 1-step history
 
   // Foot contacts
   std::array<uint16_t, 4> foot_forces_{1, 1, 1, 1};
+
+  // History buffers
+  std::array<float, 3 * kHistory> gravity_b_hist_{}; ///< Gravity vector history
+  std::array<float, 3 * kHistory> imu_lin_acc_hist_{};  ///< Linear acceleration history
+  std::array<float, 3 * kHistory> imu_ang_vel_hist_{};  ///< Angular velocity history
+  std::array<float, 3 * kHistory> vel_cmd_hist_{};  ///< Linear velocity history
+  std::array<float, kDimDOF * kHistory> q_hist_{};   ///< Joint positions history
+  std::array<float, kDimDOF * kHistory> dq_hist_{};  ///< Joint velocities history
+  std::array<float, kDimDOF * kHistory> action_hist_{};  ///< Action history
+  std::array<uint16_t, 4 * kHistory> foot_forces_hist_{};
 
   //! Initial pose (in radians, Isaac order)
   static constexpr std::array<const float, 12> q0_ = {
