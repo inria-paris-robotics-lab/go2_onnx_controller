@@ -4,7 +4,7 @@
 
 #include "onnx_actor.hpp"
 
-// constexpr unsigned int inputSize = 45;
+constexpr unsigned int kInputSize = 104;
 void print_vec(const std::span<float> &vec, const std::string &name){
     std::cout << name << ": [";
     for (size_t i = 0; i < vec.size(); ++i) {
@@ -27,7 +27,7 @@ int main() {
 
   std::string model_path = home + "/.local/share/.onnx-actor/model.onnx";
 
-  std::array<float, 52> observation{0.0};
+  std::array<float, kInputSize> observation{0.0};
   std::array<float, 12> action{0.0};
 
   ONNXActor actor(model_path, observation, action);
