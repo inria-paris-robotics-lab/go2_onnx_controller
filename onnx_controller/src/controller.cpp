@@ -109,9 +109,9 @@ void ONNXController::print_vecs() {
 
 void ONNXController::publish() {
   if (!robot_interface_->is_ready()) {
-    RCLCPP_WARN(this->get_logger(),
+    /*RCLCPP_WARN(this->get_logger(),
                 "ONNXController::publish() Robot is not ready, cannot "
-                "send command!");
+                "send command!"); */
     return;
   }
   if (!robot_interface_->is_safe()) {
@@ -129,7 +129,7 @@ void ONNXController::publish() {
   }
 
   // Project the gravity into base frame
-  auto quat = robot_interface_->get_quaternion();
+  std::array<float, 4> quat = robot_interface_->get_quaternion();
   quaternion_ = Eigen::Quaternion(quat[0], quat[1], quat[2], quat[3]);
   Eigen::Map<const Eigen::Vector3f> vec(gravity_w_.data());
   Eigen::Map<Eigen::Vector3f> gb_map(gravity_b_.data());
@@ -138,8 +138,8 @@ void ONNXController::publish() {
   // Get the current state
   q_ = robot_interface_->get_q();
   dq_ = robot_interface_->get_dq();
-  imu_lin_acc_ = robot_interface_->get_lin_acc();
-  imu_ang_vel_ = robot_interface_->get_ang_vel();
+  base_lin_vel_ = robot_interface_->get_lin_acc();
+  base_ang_vel_ = robot_interface_->get_ang_vel();
 
   // Read foot contact state
   for (uint8_t i = 0; i < 4; i++) {
@@ -147,25 +147,33 @@ void ONNXController::publish() {
   }
 
   // Subtract the q0_ initial pose from the joint positions
-  for (size_t i = 0; i < 12; i++) {
+  for (uint8_t i = 0; i < 12; i++) {
     q_[i] -= q0_[i];
   }
 
   // Prepare the buffers
   populate_buffer(gravity_b_hist_, gravity_b_);
-  populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
-  populate_buffer(imu_ang_vel_hist_, imu_ang_vel_);
+  populate_buffer(base_lin_vel_hist_, base_lin_vel_);
+  populate_buffer(base_ang_vel_hist_, base_ang_vel_);
   populate_buffer(vel_cmd_hist_, vel_cmd_);
   populate_buffer(q_hist_, q_);
   populate_buffer(dq_hist_, dq_);
-  populate_buffer(action_hist_, action_);
+  // <-- Actions will be written after the observation buffer is created
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(observation_, gravity_b_hist_, imu_lin_acc_hist_, imu_ang_vel_hist_, vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
+  populate_buffer(observation_, gravity_b_hist_, base_lin_vel_hist_, base_ang_vel_hist_, vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
 
   // Run the ONNX model
   actor_->act();
+
+  // Scale the action
+  for (uint8_t i = 0; i < 12; i++) {
+	  action_[i] *= 0.25;
+  }
+
+  // Save action only after preparing the observation buffer
+  populate_buffer(action_hist_, action_);
 
   // Print observation and action
   print_vecs();
@@ -177,7 +185,7 @@ void ONNXController::publish() {
   std::array<float, 12> kd_array{};
 
   for (size_t i = 0; i < 12; i++) {
-    q_des[i] = q0_[i] + (action_[i] * 0.25);
+    q_des[i] = q0_[i] + action_[i];
     zeroes[i] = 0.0;
     kp_array[i] = kp_;
     kd_array[i] = kd_;

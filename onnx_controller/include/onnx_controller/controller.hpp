@@ -49,7 +49,14 @@ class ONNXController : public rclcpp::Node {
     // Recurse if there are more observations
     if constexpr (sizeof...(tail) > 0) {
       populate_buffer(target, tail...);
-    }
+    } else {
+	  size_t offset = target.size() - head.size();
+      for (size_t i = 0; i < head.size(); i++) {
+	    if (target[offset + i] != head[i]) {
+		  exit(1);
+		}
+	  }
+	}
   }
 
   /**
@@ -79,7 +86,7 @@ class ONNXController : public rclcpp::Node {
       parameter_callback_handle_;  ///< Handle for the parameter callback
 
   // Torque control parameters
-  float kp_ = 28.0;  ///< Proportional gain
+  float kp_ = 25.0;  ///< Proportional gain
   float kd_ = 0.5;   ///< Derivative gain
 
   sensor_msgs::msg::Joy::SharedPtr joy_;  ///< Pointer to the Joy message
@@ -94,11 +101,11 @@ class ONNXController : public rclcpp::Node {
 
   // Inertial state
   Eigen::Quaternion<float> quaternion_{}; ///< Orientation (w, x, y, z)
-  std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
-  std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
+  std::array<float, 3> base_lin_vel_{};  ///< Linear velocity
+  std::array<float, 3> base_ang_vel_{};  ///< Angular velocity
 
   // Velocity command
-  std::array<float, 3> vel_cmd_{};  ///< Linear velocity command
+  std::array<float, 3> vel_cmd_{};  ///< Velocity command
 
   // Proprioceptive state
   std::array<float, kDimDOF> q_{};   ///< Joint positions
@@ -106,21 +113,21 @@ class ONNXController : public rclcpp::Node {
 
   // Control state
   std::array<float, kDimDOF> action_{};  ///< Action to be taken, of size 12
-  std::array<float, kDimObs * 2>
-      observation_{};  ///< Observation array, with a 1-step history
+  std::array<float, kDimObs * kHistory>
+      observation_{};  ///< Observation array, with a kHistory-step history
 
   // Foot contacts
   std::array<uint16_t, 4> foot_forces_{1, 1, 1, 1};
 
   // History buffers
   std::array<float, 3 * kHistory> gravity_b_hist_{}; ///< Gravity vector history
-  std::array<float, 3 * kHistory> imu_lin_acc_hist_{};  ///< Linear acceleration history
-  std::array<float, 3 * kHistory> imu_ang_vel_hist_{};  ///< Angular velocity history
-  std::array<float, 3 * kHistory> vel_cmd_hist_{};  ///< Linear velocity history
+  std::array<float, 3 * kHistory> base_lin_vel_hist_{};  ///< Linear velocity history
+  std::array<float, 3 * kHistory> base_ang_vel_hist_{};  ///< Angular velocity history
+  std::array<float, 3 * kHistory> vel_cmd_hist_{};  ///< Velocity command history
   std::array<float, kDimDOF * kHistory> q_hist_{};   ///< Joint positions history
   std::array<float, kDimDOF * kHistory> dq_hist_{};  ///< Joint velocities history
   std::array<float, kDimDOF * kHistory> action_hist_{};  ///< Action history
-  std::array<uint16_t, 4 * kHistory> foot_forces_hist_{};
+  std::array<uint16_t, 4 * kHistory> foot_forces_hist_{}; ///< Foot force history
 
   //! Initial pose (in radians, Isaac order)
   static constexpr std::array<const float, 12> q0_ = {
