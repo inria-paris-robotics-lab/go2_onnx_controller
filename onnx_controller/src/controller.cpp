@@ -84,9 +84,57 @@ void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
 
 void ONNXController::print_vecs() {
   // Print observation and action
-  std::cout << "Observation: " << std::endl;
+  std::cout << "Observation: ";
   for (size_t i = 0; i < observation_.size(); i++) {
-    std::cout << i << ": " << observation_[i] << std::endl;
+    std::cout << observation_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "gravity_b_hist_: ";
+  for (size_t i = 0; i < gravity_b_hist_.size(); i++) {
+    std::cout << gravity_b_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "base_lin_vel_hist_: ";
+  for (size_t i = 0; i < base_lin_vel_hist_.size(); i++) {
+	  std::cout << base_lin_vel_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "base_ang_vel_hist_: ";
+  for (size_t i = 0; i < base_ang_vel_hist_.size(); i++) {
+    std::cout << base_ang_vel_hist_[i] << ", " ;
+  }
+  std::cout << std::endl;
+
+  std::cout << "vel_cmd_hist_: ";
+  for (size_t i = 0; i < vel_cmd_hist_.size(); i++) {
+    std::cout << vel_cmd_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "q_hist_: ";
+  for (size_t i = 0; i < q_hist_.size(); i++) {
+    std::cout << q_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "dq_hist_: ";
+  for (size_t i = 0; i < dq_hist_.size(); i++) {
+    std::cout << dq_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "action_hist_: ";
+  for (size_t i = 0; i < action_hist_.size(); i++) {
+    std::cout << action_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "foot_forces_hist_: ";
+  for (size_t i = 0; i < foot_forces_hist_.size(); i++) {
+    std::cout << action_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
@@ -104,6 +152,7 @@ void ONNXController::print_vecs() {
 
   std::cout << "kp: " << kp_ << std::endl;
   std::cout << "kd: " << kd_ << std::endl;
+  std::cout << std::endl;
   std::cout << std::endl;
 }
 
@@ -158,22 +207,15 @@ void ONNXController::publish() {
   populate_buffer(vel_cmd_hist_, vel_cmd_);
   populate_buffer(q_hist_, q_);
   populate_buffer(dq_hist_, dq_);
-  // <-- Actions will be written after the observation buffer is created
+  populate_buffer(action_hist_, action_);
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(observation_, gravity_b_hist_, base_lin_vel_hist_, base_ang_vel_hist_, vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
+  populate_buffer(observation_, gravity_b_hist_, base_lin_vel_hist_, base_ang_vel_hist_,
+		  vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
 
-  // Run the ONNX model
+  // Run the ONNX model (writes to action_)
   actor_->act();
-
-  // Scale the action
-  for (uint8_t i = 0; i < 12; i++) {
-	  action_[i] *= 0.25;
-  }
-
-  // Save action only after preparing the observation buffer
-  populate_buffer(action_hist_, action_);
 
   // Print observation and action
   print_vecs();
@@ -185,7 +227,9 @@ void ONNXController::publish() {
   std::array<float, 12> kd_array{};
 
   for (size_t i = 0; i < 12; i++) {
-    q_des[i] = q0_[i] + action_[i];
+    // The policy expects the prev. action in the scale it outputs them,
+	// so we do the scaling only before sanding the commands to the actuators.
+    q_des[i] = q0_[i] + action_[i] * 0.25;
     zeroes[i] = 0.0;
     kp_array[i] = kp_;
     kd_array[i] = kd_;
