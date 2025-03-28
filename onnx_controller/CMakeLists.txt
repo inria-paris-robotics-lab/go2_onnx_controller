@@ -8,6 +8,17 @@ endif()
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 
+# Include MCAP
+include(FetchContent)
+FetchContent_Declare(
+  mcap_builder
+  GIT_REPOSITORY https://github.com/olympus-robotics/mcap_builder.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(mcap_builder)
+
+# create your targets
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -21,7 +32,7 @@ add_executable(controller
   src/robot_interface.cpp
 )
 # TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
-target_link_libraries(controller onnx-actor onnxruntime)
+target_link_libraries(controller onnx-actor mcap)
 
 ament_target_dependencies(controller rclcpp unitree_go sensor_msgs)
 target_include_directories(controller PUBLIC
