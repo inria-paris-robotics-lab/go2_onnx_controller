@@ -20,10 +20,10 @@ list(APPEND CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 
 add_library(onnx-actor SHARED src/cpp/onnx_actor.cpp)
 target_include_directories(onnx-actor PUBLIC include)
-target_link_libraries(onnx-actor onnxruntime)
+target_link_libraries(onnx-actor PUBLIC onnxruntime)
 
 add_executable(onnx-inference src/cpp/main.cpp)
-target_link_libraries(onnx-inference onnx-actor)
+target_link_libraries(onnx-inference PUBLIC onnx-actor)
 
 # Make data files available in the build directory
 file(COPY data DESTINATION ${CMAKE_BINARY_DIR})
