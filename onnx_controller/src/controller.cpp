@@ -13,6 +13,7 @@
 #include "onnx_actor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "robot_interface.hpp"
+#include "writer.hpp"
 
 using namespace std::chrono_literals;
 

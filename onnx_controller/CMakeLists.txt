@@ -8,6 +8,8 @@ endif()
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 
+add_subdirectory(proto)
+
 # Include MCAP
 include(FetchContent)
 FetchContent_Declare(
@@ -17,8 +19,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(mcap_builder)
 
-# create your targets
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -26,13 +26,15 @@ find_package(unitree_go REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+# create your targets
 add_executable(controller
   src/controller.cpp
   src/motor_crc.cpp
   src/robot_interface.cpp
+  src/writer.cpp
 )
 # TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
-target_link_libraries(controller onnx-actor mcap)
+target_link_libraries(controller onnx-actor onnxruntime mcap mcap_proto_lib)
 
 ament_target_dependencies(controller rclcpp unitree_go sensor_msgs)
 target_include_directories(controller PUBLIC
