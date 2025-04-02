@@ -1,10 +1,6 @@
 #define MCAP_IMPLEMENTATION
 #include "writer.hpp"
 
-#include "BuildFileDescriptorSet.hpp"
-#include "ObservationAction.pb.h"
-#include "spdlog/spdlog.h"
-
 Writer::Writer() {
   std::string filename = std::tmpnam(nullptr);
   filename += ".mcap";
@@ -21,11 +17,11 @@ Writer::Writer() {
   // Set up the channel
   mcap::ChannelId channelId;
   {
-   mcap::Schema schema(
+/*   mcap::Schema schema(
       "ObservationAction", "protobuf",
       foxglove::BuildFileDescriptorSet(ObservationAction::descriptor()).SerializeAsString());
-   
+ */  
    // Register the schema 
-   writer_.addSchema(schema);  
+  // writer_.addSchema(schema);  
   }
 }

@@ -13,6 +13,7 @@
 #include "std_msgs/msg/bool.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
+#include "onnx_interfaces/msg/observation_action.hpp"
 
 /**
  * Maps the indices of elements in the source array to their corresponding
@@ -67,6 +68,10 @@ class Go2RobotInterface {
                     const std::array<float, kDimDOF> &tau,
                     const std::array<float, kDimDOF> &kp,
                     const std::array<float, kDimDOF> &kd);
+
+  void publish_obs_act(const onnx_interfaces::msg::ObservationAction::SharedPtr &msg){
+  	obs_act_publisher_->publish(*msg.get());
+  };
 
   void start_async(const std::vector<float> &q_start, bool goto_config = true);
 
@@ -197,8 +202,12 @@ class Go2RobotInterface {
   // Publishers
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
       watchdog_publisher_;  ///< Publisher for the "/watchdog/arm" topic
+  
   rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr
       command_publisher_;  ///< Publisher for the command topic
+
+  rclcpp::Publisher<onnx_interfaces::msg::ObservationAction>::SharedPtr
+      obs_act_publisher_;  ///< Publisher for the policy IO topic
 
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
       parameter_callback_handle_;  ///< Handle for the parameter callback

@@ -8,8 +8,6 @@ endif()
 # Set C++ standard
 set(CMAKE_CXX_STANDARD 20)
 
-add_subdirectory(proto)
-
 # Include MCAP
 include(FetchContent)
 FetchContent_Declare(
@@ -25,6 +23,7 @@ find_package(rclcpp REQUIRED)
 find_package(unitree_go REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(onnx_interfaces REQUIRED)
 
 # create your targets
 add_executable(controller
@@ -34,9 +33,9 @@ add_executable(controller
   src/writer.cpp
 )
 # TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
-target_link_libraries(controller onnx-actor onnxruntime mcap mcap_proto_lib)
+target_link_libraries(controller onnx-actor onnxruntime mcap)
 
-ament_target_dependencies(controller rclcpp unitree_go sensor_msgs)
+ament_target_dependencies(controller rclcpp unitree_go sensor_msgs onnx_interfaces)
 target_include_directories(controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/onnx_controller>) # for headers when building)
 

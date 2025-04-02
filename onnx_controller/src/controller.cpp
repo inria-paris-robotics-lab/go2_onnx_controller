@@ -218,6 +218,12 @@ void ONNXController::publish() {
   // Run the ONNX model (writes to action_)
   actor_->act();
 
+  // Populate the message
+  std::copy(observation_.begin(), observation_.end(), obs_act_->observation.begin());
+  std::copy(action_.begin(), action_.end(), obs_act_->action.begin());
+
+  robot_interface_->publish_obs_act(obs_act_);
+  
   // Print observation and action
   print_vecs();
 

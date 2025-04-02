@@ -10,6 +10,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "robot_interface.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "onnx_interfaces/msg/observation_action.hpp"
 
 constexpr size_t kDimObs = 52;
 constexpr size_t kHistory = 2;
@@ -90,6 +91,7 @@ class ONNXController : public rclcpp::Node {
   float kd_ = 0.5;   ///< Derivative gain
 
   sensor_msgs::msg::Joy::SharedPtr joy_;  ///< Pointer to the Joy message
+  onnx_interfaces::msg::ObservationAction::SharedPtr obs_act_;  ///< Pointer to the ObservationAction message
 
   std::unique_ptr<Go2RobotInterface>
       robot_interface_;               ///< Robot interface object
