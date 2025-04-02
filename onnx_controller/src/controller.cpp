@@ -31,7 +31,7 @@ std::string get_model_path() {
 
 ONNXController::ONNXController()
     : Node("onnx_controller"),
-	    joy_(std::make_shared<sensor_msgs::msg::Joy>()),
+        joy_(std::make_shared<sensor_msgs::msg::Joy>()),
         obs_act_(std::make_shared<onnx_interfaces::msg::ObservationAction>()) {
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
