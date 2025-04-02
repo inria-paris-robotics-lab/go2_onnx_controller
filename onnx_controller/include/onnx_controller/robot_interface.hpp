@@ -70,7 +70,7 @@ class Go2RobotInterface {
                     const std::array<float, kDimDOF> &kd);
 
   void publish_obs_act(const onnx_interfaces::msg::ObservationAction::SharedPtr &msg){
-  	obs_act_publisher_->publish(*msg.get());
+    obs_act_publisher_->publish(*msg.get());
   };
 
   void start_async(const std::vector<float> &q_start, bool goto_config = true);
@@ -202,7 +202,7 @@ class Go2RobotInterface {
   // Publishers
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
       watchdog_publisher_;  ///< Publisher for the "/watchdog/arm" topic
-  
+
   rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr
       command_publisher_;  ///< Publisher for the command topic
 

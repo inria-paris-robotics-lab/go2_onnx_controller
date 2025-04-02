@@ -225,7 +225,7 @@ void ONNXController::publish() {
   obs_act_->action = action_;
 
   robot_interface_->publish_obs_act(obs_act_);
-  
+
   // Print observation and action
   print_vecs();
 
