@@ -30,20 +30,19 @@ std::string get_model_path() {
 }
 
 ONNXController::ONNXController()
-    : Node("onnx_controller"),
-        joy_(std::make_shared<sensor_msgs::msg::Joy>()),
-        obs_act_(std::make_shared<onnx_interfaces::msg::ObservationAction>()) {
+    : Node("onnx_controller"), joy_(std::make_shared<sensor_msgs::msg::Joy>()),
+      obs_act_(std::make_shared<onnx_interfaces::msg::ObservationAction>()) {
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
-      robot_interface_ =
-          std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_, isaac_feet_names_);
+      robot_interface_ = std::make_unique<Go2RobotInterface>(
+          *this, isaac_joint_names_, isaac_feet_names_);
 
   // Set parameters
   this->declare_parameter("kp", kp_);
   this->declare_parameter("kd", kd_);
 
   auto param_change_callback =
-      [this](const std::vector<rclcpp::Parameter>& params) {
+      [this](const std::vector<rclcpp::Parameter> &params) {
         return set_param_callback(params);
       };
 
@@ -101,13 +100,13 @@ void ONNXController::print_vecs() {
 
   std::cout << "base_lin_vel_hist_: ";
   for (size_t i = 0; i < base_lin_vel_hist_.size(); i++) {
-	  std::cout << base_lin_vel_hist_[i] << ", ";
+    std::cout << base_lin_vel_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "base_ang_vel_hist_: ";
   for (size_t i = 0; i < base_ang_vel_hist_.size(); i++) {
-    std::cout << base_ang_vel_hist_[i] << ", " ;
+    std::cout << base_ang_vel_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
@@ -214,8 +213,9 @@ void ONNXController::publish() {
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(observation_, gravity_b_hist_, base_lin_vel_hist_, base_ang_vel_hist_,
-		  vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
+  populate_buffer(observation_, gravity_b_hist_, base_lin_vel_hist_,
+                  base_ang_vel_hist_, vel_cmd_hist_, q_hist_, dq_hist_,
+                  action_hist_, foot_forces_hist_);
 
   // Run the ONNX model (writes to action_)
   actor_->act();
@@ -237,7 +237,7 @@ void ONNXController::publish() {
 
   for (size_t i = 0; i < 12; i++) {
     // The policy expects the prev. action in the scale it outputs them,
-	// so we do the scaling only before sanding the commands to the actuators.
+    // so we do the scaling only before sanding the commands to the actuators.
     q_des[i] = q0_[i] + action_[i] * 0.25;
     zeroes[i] = 0.0;
     kp_array[i] = kp_;
@@ -249,11 +249,11 @@ void ONNXController::publish() {
 }
 
 rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
-    const std::vector<rclcpp::Parameter>& params) {
+    const std::vector<rclcpp::Parameter> &params) {
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = true;
 
-  for (const auto& param : params) {
+  for (const auto &param : params) {
     if (param.get_name() == "kp") {
       kp_ = param.as_double();
     } else if (param.get_name() == "kd") {
@@ -266,7 +266,7 @@ rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
   return result;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<ONNXController>());
   rclcpp::shutdown();

@@ -13,25 +13,21 @@
 Go2RobotInterface::Go2RobotInterface(
     rclcpp::Node &node,
     const std::array<std::string_view, 12> source_joint_names,
-	const std::array<std::string_view, 4> source_feet_names)
-    : node_(node),
-      state_(std::make_shared<unitree_go::msg::LowState>()),
+    const std::array<std::string_view, 4> source_feet_names)
+    : node_(node), state_(std::make_shared<unitree_go::msg::LowState>()),
       cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
       source_joint_names_(source_joint_names),
-	  source_feet_names_(source_feet_names),
-      target_joint_idx_(
-          map_indices(source_joint_names_, target_joint_names_)),
-      source_joint_idx_(
-          map_indices(target_joint_names_, source_joint_names_)),
-      target_feet_idx_(
-		  map_indices(source_feet_names_, target_feet_names_)),
-      source_feet_idx_(
-		  map_indices(target_feet_names_, source_feet_names_)){
+      source_feet_names_(source_feet_names),
+      target_joint_idx_(map_indices(source_joint_names_, target_joint_names_)),
+      source_joint_idx_(map_indices(target_joint_names_, source_joint_names_)),
+      target_feet_idx_(map_indices(source_feet_names_, target_feet_names_)),
+      source_feet_idx_(map_indices(target_feet_names_, source_feet_names_)) {
   // Set up publishers
   watchdog_publisher_ =
       node.create_publisher<std_msgs::msg::Bool>("/watchdog/arm", 10);
   obs_act_publisher_ =
-      node.create_publisher<onnx_interfaces::msg::ObservationAction>("/observation_action", 10);
+      node.create_publisher<onnx_interfaces::msg::ObservationAction>(
+          "/observation_action", 10);
   command_publisher_ =
       node.create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
 
@@ -137,7 +133,7 @@ void Go2RobotInterface::go_to_configuration_aux(
   auto start_time = node_.now();
 
   // Set up rate limiter
-  auto rate = rclcpp::Rate(100);  // 100 Hz
+  auto rate = rclcpp::Rate(100); // 100 Hz
 
   // Sleep for a second to allow the robot to stabilise
   rclcpp::sleep_for(std::chrono::seconds(1));
@@ -152,7 +148,8 @@ void Go2RobotInterface::go_to_configuration_aux(
     // Calculate the interpolation factor
     float alpha = current_time.seconds() / duration_s;
 
-    if(alpha > 1.5) break;
+    if (alpha > 1.5)
+      break;
     alpha = alpha > 1.0 ? 1.0 : alpha;
 
     // Interpolate the joint positions

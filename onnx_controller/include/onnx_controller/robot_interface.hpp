@@ -8,12 +8,12 @@
 #include <memory>
 #include <string>
 
+#include "onnx_interfaces/msg/observation_action.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "unitree_go/msg/low_cmd.hpp"
 #include "unitree_go/msg/low_state.hpp"
-#include "onnx_interfaces/msg/observation_action.hpp"
 
 /**
  * Maps the indices of elements in the source array to their corresponding
@@ -43,10 +43,11 @@ std::array<std::uint8_t, N> map_indices(std::array<T, N> source,
 constexpr size_t kDimDOF = 12;
 
 class Go2RobotInterface {
- public:
-  Go2RobotInterface(rclcpp::Node &node,
-                    const std::array<std::string_view, kDimDOF> source_joint_names,
-                    const std::array<std::string_view, 4> source_feet_names);
+public:
+  Go2RobotInterface(
+      rclcpp::Node &node,
+      const std::array<std::string_view, kDimDOF> source_joint_names,
+      const std::array<std::string_view, 4> source_feet_names);
 
   /**
    * @brief Sends motor commands to the `/lowstate` topic.
@@ -69,7 +70,8 @@ class Go2RobotInterface {
                     const std::array<float, kDimDOF> &kp,
                     const std::array<float, kDimDOF> &kd);
 
-  void publish_obs_act(const onnx_interfaces::msg::ObservationAction::SharedPtr &msg){
+  void publish_obs_act(
+      const onnx_interfaces::msg::ObservationAction::SharedPtr &msg) {
     obs_act_publisher_->publish(*msg.get());
   };
 
@@ -106,7 +108,7 @@ class Go2RobotInterface {
   const std::array<float, 3> &get_ang_vel() const { return imu_ang_vel_; }
   const std::array<uint16_t, 4> &get_forces() const { return foot_forces_; }
 
- private:
+private:
   /**
    * @brief Initializes the command structure with default values.
    *
@@ -165,52 +167,52 @@ class Go2RobotInterface {
 
   // Safety flags
   volatile bool is_ready_ =
-      false;  ///< True if the robot has been successfully initialised.
-  volatile bool is_safe_ = true;  ///< True if it is safe to publish commands.
+      false; ///< True if the robot has been successfully initialised.
+  volatile bool is_safe_ = true; ///< True if it is safe to publish commands.
 
   // Robot state
   // Inertial state
-  std::array<float, 4> quaternion_{}; ///< Orientation (w, x, y, z)
-  std::array<float, 3> imu_lin_acc_{};  ///< Linear acceleration
-  std::array<float, 3> imu_ang_vel_{};  ///< Angular velocity
+  std::array<float, 4> quaternion_{};  ///< Orientation (w, x, y, z)
+  std::array<float, 3> imu_lin_acc_{}; ///< Linear acceleration
+  std::array<float, 3> imu_ang_vel_{}; ///< Angular velocity
 
   // Joint states (kDimDOF joints)
-  std::array<float, kDimDOF> state_q_{};    ///< Joint positions
-  std::array<float, kDimDOF> state_dq_{};   ///< Joint velocities
-  std::array<float, kDimDOF> state_ddq_{};  ///< Joint accelerations
-  std::array<float, kDimDOF> state_tau_{};  ///< Joint torques (Nm)
+  std::array<float, kDimDOF> state_q_{};   ///< Joint positions
+  std::array<float, kDimDOF> state_dq_{};  ///< Joint velocities
+  std::array<float, kDimDOF> state_ddq_{}; ///< Joint accelerations
+  std::array<float, kDimDOF> state_tau_{}; ///< Joint torques (Nm)
 
   // Foot contacts
   std::array<uint16_t, 4> foot_forces_{}; ///< Foot contact forces (int)
 
   // Messages
   unitree_go::msg::LowState::SharedPtr
-      state_;                               ///< Pointer to the LowState message
-  unitree_go::msg::LowCmd::SharedPtr cmd_;  ///< Pointer to the LowCmd message
+      state_;                              ///< Pointer to the LowState message
+  unitree_go::msg::LowCmd::SharedPtr cmd_; ///< Pointer to the LowCmd message
 
-  rclcpp::TimerBase::SharedPtr timer_;  ///< Timer for publishing commands
+  rclcpp::TimerBase::SharedPtr timer_; ///< Timer for publishing commands
 
   // Subscribers
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr
-      watchdog_subscription_;  ///< Subscription to the "/watchdog/is_safe"
-                               ///< topic
+      watchdog_subscription_; ///< Subscription to the "/watchdog/is_safe"
+                              ///< topic
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr
-      joy_subscription_;  ///< Subscription to the Joy topic
+      joy_subscription_; ///< Subscription to the Joy topic
   rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr
-      state_subscription_;  ///< Subscription to the state topic
+      state_subscription_; ///< Subscription to the state topic
 
   // Publishers
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
-      watchdog_publisher_;  ///< Publisher for the "/watchdog/arm" topic
+      watchdog_publisher_; ///< Publisher for the "/watchdog/arm" topic
 
   rclcpp::Publisher<unitree_go::msg::LowCmd>::SharedPtr
-      command_publisher_;  ///< Publisher for the command topic
+      command_publisher_; ///< Publisher for the command topic
 
   rclcpp::Publisher<onnx_interfaces::msg::ObservationAction>::SharedPtr
-      obs_act_publisher_;  ///< Publisher for the policy IO topic
+      obs_act_publisher_; ///< Publisher for the policy IO topic
 
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
-      parameter_callback_handle_;  ///< Handle for the parameter callback
+      parameter_callback_handle_; ///< Handle for the parameter callback
 
   // Joint names in the order that the controller is expecting them.
   const std::array<std::string_view, kDimDOF> source_joint_names_;
@@ -227,7 +229,7 @@ class Go2RobotInterface {
   // Joint names in the order that the robot is expecting them.
   static constexpr std::array<std::string_view, 4> target_feet_names_ = {
       "FR", "FL", "RR", "RL"};
-  
+
   // Map indices between source and target joint orderings
   const std::array<uint8_t, kDimDOF> target_joint_idx_;
   const std::array<uint8_t, kDimDOF> source_joint_idx_;
