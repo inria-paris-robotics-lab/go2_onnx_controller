@@ -13,7 +13,6 @@
 #include "onnx_actor.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "robot_interface.hpp"
-#include "writer.hpp"
 
 using namespace std::chrono_literals;
 
@@ -98,15 +97,15 @@ void ONNXController::print_vecs() {
   }
   std::cout << std::endl;
 
-  std::cout << "base_lin_vel_hist_: ";
-  for (size_t i = 0; i < base_lin_vel_hist_.size(); i++) {
-    std::cout << base_lin_vel_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
-
   std::cout << "base_ang_vel_hist_: ";
   for (size_t i = 0; i < base_ang_vel_hist_.size(); i++) {
     std::cout << base_ang_vel_hist_[i] << ", ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "imu_lin_acc_hist_: ";
+  for (size_t i = 0; i < imu_lin_acc_hist_.size(); i++) {
+    std::cout << imu_lin_acc_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
@@ -189,7 +188,7 @@ void ONNXController::publish() {
   // Get the current state
   q_ = robot_interface_->get_q();
   dq_ = robot_interface_->get_dq();
-  base_lin_vel_ = robot_interface_->get_lin_acc();
+  imu_lin_acc_ = robot_interface_->get_lin_acc();
   base_ang_vel_ = robot_interface_->get_ang_vel();
 
   // Read foot contact state
@@ -204,8 +203,8 @@ void ONNXController::publish() {
 
   // Prepare the buffers
   populate_buffer(gravity_b_hist_, gravity_b_);
-  populate_buffer(base_lin_vel_hist_, base_lin_vel_);
   populate_buffer(base_ang_vel_hist_, base_ang_vel_);
+  populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
   populate_buffer(vel_cmd_hist_, vel_cmd_);
   populate_buffer(q_hist_, q_);
   populate_buffer(dq_hist_, dq_);
@@ -213,7 +212,7 @@ void ONNXController::publish() {
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(observation_, gravity_b_hist_, base_lin_vel_hist_,
+  populate_buffer(observation_, gravity_b_hist_, imu_lin_acc_hist_,
                   base_ang_vel_hist_, vel_cmd_hist_, q_hist_, dq_hist_,
                   action_hist_, foot_forces_hist_);
 
