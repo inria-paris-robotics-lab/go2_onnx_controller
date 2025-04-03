@@ -31,7 +31,7 @@ Go2RobotInterface::Go2RobotInterface(
   watchdog_publisher_ =
       node.create_publisher<std_msgs::msg::Bool>("/watchdog/arm", 10);
   obs_act_publisher_ =
-      node.create_publisher<onnx_interfaces::msg::ObservationAction>("/observation_action_", 10);
+      node.create_publisher<onnx_interfaces::msg::ObservationAction>("/observation_action", 10);
   command_publisher_ =
       node.create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
 
