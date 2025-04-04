@@ -66,12 +66,7 @@ ONNXController::ONNXController()
               "ONNXController initialised, going to initial "
               "pose and waiting for Joy message.");
 
-  // Go to the initial pose
-  std::array<float, 12> q_des{};
-  for (size_t i = 0; i < 12; i++) {
-    q_des[i] = q0_[i];
-  }
-  robot_interface_->go_to_configuration(q_des, 5.0);
+  robot_interface_->go_to_configuration(q0_, 5.0);
 
   // Set the timer to publish at 50 Hz
   timer_ =
@@ -174,7 +169,7 @@ void ONNXController::publish() {
   if (joy_ && !joy_->axes.empty()) {
     // Reset to the original configuration if O is pressed
     if (joy_->buttons[1] != 0) {
-      robot_interface_->go_to_configuration(q_des, 5.0);
+      robot_interface_->go_to_configuration(q0_, 5.0);
     }
 
     // Ingest commanded velocity
