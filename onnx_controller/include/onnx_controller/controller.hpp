@@ -12,7 +12,7 @@
 #include "robot_interface.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
-constexpr size_t kDimObs = 52;
+constexpr size_t kDimObs = 49;
 constexpr size_t kHistory = 2;
 
 class ONNXController : public rclcpp::Node {

@@ -204,7 +204,7 @@ void ONNXController::publish() {
   // Prepare the buffers
   populate_buffer(gravity_b_hist_, gravity_b_);
   populate_buffer(base_ang_vel_hist_, base_ang_vel_);
-  populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
+  // populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
   populate_buffer(vel_cmd_hist_, vel_cmd_);
   populate_buffer(q_hist_, q_);
   populate_buffer(dq_hist_, dq_);
@@ -212,8 +212,8 @@ void ONNXController::publish() {
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(observation_, gravity_b_hist_, imu_lin_acc_hist_,
-                  base_ang_vel_hist_, vel_cmd_hist_, q_hist_, dq_hist_,
+  populate_buffer(observation_, gravity_b_hist_, base_ang_vel_hist_,
+                  /*imu_lin_acc_hist_,*/ vel_cmd_hist_, q_hist_, dq_hist_,
                   action_hist_, foot_forces_hist_);
 
   // Run the ONNX model (writes to action_)
