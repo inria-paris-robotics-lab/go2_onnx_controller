@@ -219,6 +219,11 @@ void ONNXController::publish() {
   // Run the ONNX model (writes to action_)
   actor_->act();
 
+  // Clamp the action between -+ kActionLimit
+  for (float &a : action_) {
+    a = std::clamp(a, -kActionLimit, kActionLimit);
+  }
+
   // Populate the message
   obs_act_->observation = observation_;
   obs_act_->action = action_;

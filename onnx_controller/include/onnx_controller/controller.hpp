@@ -14,6 +14,7 @@
 
 constexpr size_t kDimObs = 49;
 constexpr size_t kHistory = 2;
+constexpr float kActionLimit = 1000; // Clip the actions to -+ this limit
 
 class ONNXController : public rclcpp::Node {
 public:
