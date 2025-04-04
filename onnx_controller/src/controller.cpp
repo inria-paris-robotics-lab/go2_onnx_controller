@@ -130,7 +130,7 @@ void ONNXController::print_vecs() {
 
   std::cout << "foot_forces_hist_: ";
   for (size_t i = 0; i < foot_forces_hist_.size(); i++) {
-    std::cout << action_hist_[i] << ", ";
+    std::cout << foot_forces_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
@@ -217,7 +217,7 @@ void ONNXController::publish() {
   // Clamp the action between -+ kActionLimit
   for (float &a : action_) {
     a = std::clamp(a, -kActionLimit, kActionLimit);
-    a *= joy_->buttons[0] == 0; // lower button (i.e. X-button on PS) zeroes the
+    a *= joy_->buttons[0]; // lower button (i.e. X-button on PS) zeroes the
                            // action
   }
 
