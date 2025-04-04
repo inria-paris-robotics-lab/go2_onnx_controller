@@ -139,7 +139,7 @@ private:
       foot_forces_hist_{}; ///< Foot force history
 
   //! Initial pose (in radians, Isaac order)
-  static constexpr std::array<const float, 12> q0_ = {
+  static constexpr std::array<float, 12> q0_ = {
       0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5};
 
   //! Joint names (Isaac does breadth-first traversal)
