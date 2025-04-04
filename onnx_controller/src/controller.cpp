@@ -217,7 +217,7 @@ void ONNXController::publish() {
   // Clamp the action between -+ kActionLimit
   for (float &a : action_) {
     a = std::clamp(a, -kActionLimit, kActionLimit);
-    a *= joy_->buttons[0]; // lower button (i.e. X-button on PS) zeroes the
+    a *= joy_->buttons[0] == 0; // lower button (i.e. X-button on PS) zeroes the
                            // action
   }
 
@@ -241,7 +241,7 @@ void ONNXController::publish() {
     // so we do the scaling only before sanding the commands to the actuators.
     q_des[i] = q0_[i] + action_[i] * 0.25;
     zeroes[i] = 0.0;
-    kp_array[i] = joy_->buttons[0] != 0 ? kp_ : 5;
+    kp_array[i] = joy_->buttons[0] == 0 ? kp_ : 5;
     kd_array[i] = kd_;
   }
 
