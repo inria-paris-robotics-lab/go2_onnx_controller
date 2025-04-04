@@ -241,7 +241,7 @@ void ONNXController::publish() {
     // so we do the scaling only before sanding the commands to the actuators.
     q_des[i] = q0_[i] + action_[i] * 0.25;
     zeroes[i] = 0.0;
-    kp_array[i] = kp_;
+    kp_array[i] = joy_->buttons[0] != 0 ? kp_ : 5;
     kd_array[i] = kd_;
   }
 
