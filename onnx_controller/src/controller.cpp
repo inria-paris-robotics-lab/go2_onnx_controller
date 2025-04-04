@@ -172,6 +172,11 @@ void ONNXController::publish() {
   }
 
   if (joy_ && !joy_->axes.empty()) {
+    // Reset to the original configuration if O is pressed
+    if (joy_->buttons[1] != 0) {
+      robot_interface_->go_to_configuration(q_des, 5.0);
+    }
+
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
     vel_cmd_[1] = pow(joy_->axes[0], 2) * ((joy_->axes[0] > 0) ? 1 : -1) * 0.8;
@@ -222,6 +227,8 @@ void ONNXController::publish() {
   // Clamp the action between -+ kActionLimit
   for (float &a : action_) {
     a = std::clamp(a, -kActionLimit, kActionLimit);
+    a *= joy_->buttons[0]; // lower button (i.e. X-button on PS) zeroes the
+                           // action
   }
 
   // Populate the message
