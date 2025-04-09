@@ -2,11 +2,19 @@
 macro(onnx_dependencies)
     include(FetchContent)
 
+    if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+        set(architecture "aarch64")
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(architecture "x64")
+    else()
+        message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
+
     if(UNIX AND NOT APPLE)
         FetchContent_Declare(
             onnxruntime
             DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-            URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz
+            URL https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-${architecture}-1.20.1.tgz
         )
         set(LIBRARY_NAME "libonnxruntime.so")
     elseif(APPLE)
