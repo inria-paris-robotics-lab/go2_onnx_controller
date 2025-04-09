@@ -4,7 +4,7 @@
 
 #include "onnx_actor.hpp"
 
-constexpr unsigned int kInputSize = 104;
+constexpr unsigned int kInputSize = 98;
 void print_vec(const std::span<float> &vec, const std::string &name){
     std::cout << name << ": [";
     for (size_t i = 0; i < vec.size(); ++i) {
