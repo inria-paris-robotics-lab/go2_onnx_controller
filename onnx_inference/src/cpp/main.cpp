@@ -5,15 +5,15 @@
 #include "onnx_actor.hpp"
 
 constexpr unsigned int kInputSize = 98;
-void print_vec(const std::span<float> &vec, const std::string &name){
-    std::cout << name << ": [";
-    for (size_t i = 0; i < vec.size(); ++i) {
-        std::cout << vec[i];
-        if (i < vec.size() - 1) {
-            std::cout << ",  ";
-        }
+void print_vec(const std::span<float> &vec, const std::string &name) {
+  std::cout << name << ": [";
+  for (size_t i = 0; i < vec.size(); ++i) {
+    std::cout << vec[i];
+    if (i < vec.size() - 1) {
+      std::cout << ",  ";
     }
-    std::cout << "]" << std::endl;
+  }
+  std::cout << "]" << std::endl;
 }
 
 int main() {
@@ -32,7 +32,15 @@ int main() {
 
   ONNXActor actor(model_path, observation, action);
   actor.print_model_info();
+
+  const auto start = std::chrono::steady_clock::now();
   actor.act();
+  const auto end = std::chrono::steady_clock::now();
+
+  std::cout << "Inference took "
+            << std::chrono::duration_cast<std::chrono::microseconds>(end -
+                                                                     start)
+            << std::endl;
 
   // Print the action
   print_vec(action, "Action");
