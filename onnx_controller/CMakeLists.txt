@@ -6,22 +6,35 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 # Set C++ standard
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
+
+# Include MCAP
+include(FetchContent)
+FetchContent_Declare(
+  mcap_builder
+  GIT_REPOSITORY https://github.com/olympus-robotics/mcap_builder.git
+  GIT_TAG main
+)
+FetchContent_MakeAvailable(mcap_builder)
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(unitree_go REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(onnx_interfaces REQUIRED)
 
+# create your targets
 add_executable(controller
   src/controller.cpp
   src/motor_crc.cpp
+  src/robot_interface.cpp
 )
 # TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
-target_link_libraries(controller onnx-actor onnxruntime)
+target_link_libraries(controller onnx-actor onnxruntime mcap)
 
-ament_target_dependencies(controller rclcpp unitree_go sensor_msgs)
+ament_target_dependencies(controller rclcpp unitree_go sensor_msgs onnx_interfaces)
 target_include_directories(controller PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/onnx_controller>) # for headers when building)
 
