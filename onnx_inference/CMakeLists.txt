@@ -12,6 +12,7 @@ endif()
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 include(cmake/dependencies.cmake)
 onnx_dependencies()
@@ -25,7 +26,7 @@ target_include_directories(onnx-actor PUBLIC include)
 target_link_libraries(onnx-actor PUBLIC onnxruntime)
 
 add_executable(onnx-inference src/cpp/main.cpp)
-target_link_libraries(onnx-inference PUBLIC onnx-actor)
+target_link_libraries(onnx-inference PUBLIC onnx-actor ament_index_cpp::ament_index_cpp)
 
 # Make data files available in the build directory
 file(COPY data DESTINATION ${CMAKE_BINARY_DIR})
@@ -41,6 +42,6 @@ install(TARGETS onnx-inference
 
 # Install the header files
 install(DIRECTORY include/ DESTINATION include)
-install(FILES ${CMAKE_BINARY_DIR}/data/model.onnx DESTINATION ~/.local/share/.onnx-actor/)
+install(DIRECTORY data/ DESTINATION share/${PROJECT_NAME}/data)
 
 ament_package()

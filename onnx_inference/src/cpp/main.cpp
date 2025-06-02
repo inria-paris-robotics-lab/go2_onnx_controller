@@ -1,6 +1,8 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <string>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include "onnx_actor.hpp"
 
@@ -25,7 +27,9 @@ int main() {
     return 1;
   }
 
-  std::string model_path = home + "/.local/share/.onnx-actor/model.onnx";
+  // Build full path to model
+  std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
+  std::string model_path = package_share_dir + "/data/model.onnx";
 
   std::array<float, kInputSize> observation{0.0};
   std::array<float, 12> action{0.0};
