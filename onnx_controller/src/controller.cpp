@@ -23,7 +23,7 @@ std::string get_model_path() {
     std::cerr << "Error: HOME environment variable not set." << std::endl;
   }
 
-  std::string model_path = home + "/.local/share/.onnx-actor/model.onnx";
+  std::string model_path = home + "/.local/share/.onnx_actor/model.onnx";
 
   return model_path;
 }
