@@ -31,8 +31,8 @@ add_executable(controller
   src/motor_crc.cpp
   src/robot_interface.cpp
 )
-# TODO: Why do we need to link onnxruntime here when we already linked it in onnx-actor?
-target_link_libraries(controller onnx-actor onnxruntime mcap)
+# TODO: Why do we need to link onnxruntime here when we already linked it in onnx_actor?
+target_link_libraries(controller onnx_actor onnxruntime mcap)
 
 ament_target_dependencies(controller rclcpp unitree_go sensor_msgs onnx_interfaces)
 target_include_directories(controller PUBLIC
