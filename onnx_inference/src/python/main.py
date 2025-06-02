@@ -4,7 +4,7 @@ import time
 
 def main():
     path = 'data/model.onnx'
-    
+
     sess = rt.InferenceSession(path)
     input_name = sess.get_inputs()[0].name
     input_shape = sess.get_inputs()[0].shape
@@ -20,7 +20,7 @@ def main():
     input_data = np.ones(input_shape, dtype=np.float32) * 2
     print(input_data)
 
-    start = time.time() 
+    start = time.time()
     output = sess.run([output_name], {input_name: input_data})
     elapsed = (time.time() - start) * 1000
     print(output)

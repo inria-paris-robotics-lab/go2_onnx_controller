@@ -11,8 +11,9 @@
  * @brief A class to handle ONNX model inference for reinforcement learning
  * policies.
  */
-class ONNXActor {
- public:
+class ONNXActor
+{
+public:
   /**
    * @brief Constructor for ONNXActor.
    * @param model_path Path to the ONNX model file.
@@ -25,9 +26,11 @@ class ONNXActor {
    * ensure that the buffers are not deallocated while the ONNXActor is
    * running.
    */
-  ONNXActor(const std::string& model_path, const std::span<float> observation,
-            const std::span<float> action,
-            OrtLoggingLevel log_level = ORT_LOGGING_LEVEL_WARNING);
+  ONNXActor(
+    const std::string & model_path,
+    const std::span<float> observation,
+    const std::span<float> action,
+    OrtLoggingLevel log_level = ORT_LOGGING_LEVEL_WARNING);
 
   /**
    * @brief Destructor for ONNXActor.
@@ -49,25 +52,25 @@ class ONNXActor {
    */
   bool check_dims();
 
- private:
-  OrtLoggingLevel log_level_;  ///< Logging level for ONNX Runtime.
-  Ort::Env env_;               ///< ONNX Runtime environment.
-  Ort::Session session_;       ///< ONNX Runtime session for model inference.
+private:
+  OrtLoggingLevel log_level_; ///< Logging level for ONNX Runtime.
+  Ort::Env env_;              ///< ONNX Runtime environment.
+  Ort::Session session_;      ///< ONNX Runtime session for model inference.
 
-  const std::span<float> observation_;  ///< Buffer for storing observations.
-  const std::span<float> action_;       ///< Buffer for storing actions.
+  const std::span<float> observation_; ///< Buffer for storing observations.
+  const std::span<float> action_;      ///< Buffer for storing actions.
 
-  Ort::MemoryInfo memory_info_;  ///< Memory information for ONNX Runtime.
-  Ort::RunOptions run_options_;  ///< Run options for ONNX Runtime.
+  Ort::MemoryInfo memory_info_; ///< Memory information for ONNX Runtime.
+  Ort::RunOptions run_options_; ///< Run options for ONNX Runtime.
 
-  const std::string model_path_;  ///< Path to the ONNX model file.*/
+  const std::string model_path_; ///< Path to the ONNX model file.*/
 
-  std::vector<int64_t> input_shape_;   ///< Shape of the model input.
-  std::vector<int64_t> output_shape_;  ///< Shape of the model output.
+  std::vector<int64_t> input_shape_;  ///< Shape of the model input.
+  std::vector<int64_t> output_shape_; ///< Shape of the model output.
 
-  std::string input_name_;   ///< Name of the model input.
-  std::string output_name_;  ///< Name of the model output.
+  std::string input_name_;  ///< Name of the model input.
+  std::string output_name_; ///< Name of the model output.
 
-  std::unique_ptr<Ort::Value> input_tensor_;   ///< Tensor for model input.
-  std::unique_ptr<Ort::Value> output_tensor_;  ///< Tensor for model output.
+  std::unique_ptr<Ort::Value> input_tensor_;  ///< Tensor for model input.
+  std::unique_ptr<Ort::Value> output_tensor_; ///< Tensor for model output.
 };

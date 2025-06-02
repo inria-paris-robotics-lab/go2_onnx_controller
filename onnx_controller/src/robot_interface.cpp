@@ -11,44 +11,37 @@
 #include "unitree_go/msg/low_state.hpp"
 
 Go2RobotInterface::Go2RobotInterface(
-    rclcpp::Node &node,
-    const std::array<std::string_view, 12> source_joint_names,
-    const std::array<std::string_view, 4> source_feet_names)
-    : node_(node), state_(std::make_shared<unitree_go::msg::LowState>()),
-      cmd_(std::make_shared<unitree_go::msg::LowCmd>()),
-      source_joint_names_(source_joint_names),
-      source_feet_names_(source_feet_names),
-      target_joint_idx_(map_indices(source_joint_names_, target_joint_names_)),
-      source_joint_idx_(map_indices(target_joint_names_, source_joint_names_)),
-      target_feet_idx_(map_indices(source_feet_names_, target_feet_names_)),
-      source_feet_idx_(map_indices(target_feet_names_, source_feet_names_)) {
+  rclcpp::Node & node,
+  const std::array<std::string_view, 12> source_joint_names,
+  const std::array<std::string_view, 4> source_feet_names)
+: node_(node)
+, state_(std::make_shared<unitree_go::msg::LowState>())
+, cmd_(std::make_shared<unitree_go::msg::LowCmd>())
+, source_joint_names_(source_joint_names)
+, source_feet_names_(source_feet_names)
+, target_joint_idx_(map_indices(source_joint_names_, target_joint_names_))
+, source_joint_idx_(map_indices(target_joint_names_, source_joint_names_))
+, target_feet_idx_(map_indices(source_feet_names_, target_feet_names_))
+, source_feet_idx_(map_indices(target_feet_names_, source_feet_names_))
+{
   // Set up publishers
-  watchdog_publisher_ =
-      node.create_publisher<std_msgs::msg::Bool>("/watchdog/arm", 10);
-  obs_act_publisher_ =
-      node.create_publisher<onnx_interfaces::msg::ObservationAction>(
-          "/observation_action", 10);
-  command_publisher_ =
-      node.create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
+  watchdog_publisher_ = node.create_publisher<std_msgs::msg::Bool>("/watchdog/arm", 10);
+  obs_act_publisher_ = node.create_publisher<onnx_interfaces::msg::ObservationAction>("/observation_action", 10);
+  command_publisher_ = node.create_publisher<unitree_go::msg::LowCmd>("/lowcmd", 10);
 
   // Subscribe to the /lowstate and /watchdog/is_safe topics
-  auto state_callback = [this](const unitree_go::msg::LowState::SharedPtr msg) {
-    consume_state(msg);
-  };
-  state_subscription_ = node_.create_subscription<unitree_go::msg::LowState>(
-      "/lowstate", 10, state_callback);
+  auto state_callback = [this](const unitree_go::msg::LowState::SharedPtr msg) { consume_state(msg); };
+  state_subscription_ = node_.create_subscription<unitree_go::msg::LowState>("/lowstate", 10, state_callback);
 
-  auto watchdog_callback = [this](const std_msgs::msg::Bool::SharedPtr msg) {
-    consume(msg);
-  };
-  watchdog_subscription_ = node.create_subscription<std_msgs::msg::Bool>(
-      "/watchdog/is_safe", 10, watchdog_callback);
+  auto watchdog_callback = [this](const std_msgs::msg::Bool::SharedPtr msg) { consume(msg); };
+  watchdog_subscription_ = node.create_subscription<std_msgs::msg::Bool>("/watchdog/is_safe", 10, watchdog_callback);
 
   // Initialize the command
   initialize_command();
 };
 
-void Go2RobotInterface::initialize_command() {
+void Go2RobotInterface::initialize_command()
+{
   cmd_->head = {0xFE, 0xEF};
   cmd_->level_flag = 0;
   cmd_->frame_reserve = 0;
@@ -63,7 +56,8 @@ void Go2RobotInterface::initialize_command() {
    * https://github.com/isaac-sim/IsaacLab/blob/874b7b628d501640399a241854c83262c5794a4b/source/extensions/omni.isaac.lab_assets/omni/isaac/lab_assets/unitree.py#L167
    * for the default values of kp and kd.
    */
-  for (auto &m_cmd_ : cmd_->motor_cmd) {
+  for (auto & m_cmd_ : cmd_->motor_cmd)
+  {
     m_cmd_.mode = 1;
     m_cmd_.q = 0;
     m_cmd_.dq = 0;
@@ -73,29 +67,40 @@ void Go2RobotInterface::initialize_command() {
   }
 };
 
-void Go2RobotInterface::send_command(const std::array<float, 12> &q,
-                                     const std::array<float, 12> &v,
-                                     const std::array<float, 12> &tau,
-                                     const std::array<float, 12> &kp,
-                                     const std::array<float, 12> &kd) {
+void Go2RobotInterface::send_command(
+  const std::array<float, 12> & q,
+  const std::array<float, 12> & v,
+  const std::array<float, 12> & tau,
+  const std::array<float, 12> & kp,
+  const std::array<float, 12> & kd)
+{
   // Check if the robot is ready
-  if (!is_ready_) {
+  if (!is_ready_)
+  {
     throw std::runtime_error("Robot is not ready, cannot send command!");
-  } else {
+  }
+  else
+  {
     send_command_aux(q, v, tau, kp, kd);
   }
 };
 
-void Go2RobotInterface::send_command_aux(const std::array<float, 12> &q,
-                                         const std::array<float, 12> &v,
-                                         const std::array<float, 12> &tau,
-                                         const std::array<float, 12> &kp,
-                                         const std::array<float, 12> &kd) {
-  if (!is_safe_) {
+void Go2RobotInterface::send_command_aux(
+  const std::array<float, 12> & q,
+  const std::array<float, 12> & v,
+  const std::array<float, 12> & tau,
+  const std::array<float, 12> & kp,
+  const std::array<float, 12> & kd)
+{
+  if (!is_safe_)
+  {
     throw std::runtime_error("Robot is not safe, cannot send command!");
-  } else {
+  }
+  else
+  {
     // Set the command
-    for (size_t source_idx = 0; source_idx < 12; source_idx++) {
+    for (size_t source_idx = 0; source_idx < 12; source_idx++)
+    {
       size_t target_idx = target_joint_idx_[source_idx];
       cmd_->motor_cmd[target_idx].q = q[source_idx];
       cmd_->motor_cmd[target_idx].dq = v[source_idx];
@@ -112,10 +117,11 @@ void Go2RobotInterface::send_command_aux(const std::array<float, 12> &q,
   }
 };
 
-void Go2RobotInterface::go_to_configuration_aux(
-    const std::array<float, 12> &q_des, float duration_s) {
+void Go2RobotInterface::go_to_configuration_aux(const std::array<float, 12> & q_des, float duration_s)
+{
   // Check that duration is positive
-  if (duration_s <= 0) {
+  if (duration_s <= 0)
+  {
     throw std::runtime_error("Duration must be strictly positive!");
   }
   // Zero-array for velocities and torques
@@ -141,7 +147,8 @@ void Go2RobotInterface::go_to_configuration_aux(
   auto start_q = state_q_;
 
   // Interpolate the joint positions
-  while (rclcpp::ok()) {
+  while (rclcpp::ok())
+  {
     // Get the current time
     auto current_time = node_.now() - start_time;
 
@@ -154,9 +161,9 @@ void Go2RobotInterface::go_to_configuration_aux(
 
     // Interpolate the joint positions
     std::array<float, 12> q_step{};
-    for (size_t source_idx = 0; source_idx < 12; source_idx++) {
-      q_step[source_idx] = start_q[source_idx] +
-                           alpha * (q_des[source_idx] - start_q[source_idx]);
+    for (size_t source_idx = 0; source_idx < 12; source_idx++)
+    {
+      q_step[source_idx] = start_q[source_idx] + alpha * (q_des[source_idx] - start_q[source_idx]);
     }
 
     // Send the command
@@ -168,11 +175,12 @@ void Go2RobotInterface::go_to_configuration_aux(
 
   // Check if the interpolation is complete by looking at difference
   // between the current and desired joint positions
-  for (size_t source_idx = 0; source_idx < 12; source_idx++) {
+  for (size_t source_idx = 0; source_idx < 12; source_idx++)
+  {
     float error = std::abs(q_des[source_idx] - state_q_[source_idx]);
-    if (error > 0.1) {
-      throw std::runtime_error("Interpolation failed, error is: " +
-                               std::to_string(error));
+    if (error > 0.1)
+    {
+      throw std::runtime_error("Interpolation failed, error is: " + std::to_string(error));
     }
   }
 
@@ -180,24 +188,24 @@ void Go2RobotInterface::go_to_configuration_aux(
   is_ready_ = true;
 };
 
-void Go2RobotInterface::go_to_configuration(const std::array<float, 12> &q_des,
-                                            float duration_s) {
+void Go2RobotInterface::go_to_configuration(const std::array<float, 12> & q_des, float duration_s)
+{
   auto msg = std_msgs::msg::Bool();
   msg.data = true;
   watchdog_publisher_->publish(msg);
   // Run aux in a separate thread
-  std::thread t(&Go2RobotInterface::go_to_configuration_aux, this, q_des,
-                duration_s);
+  std::thread t(&Go2RobotInterface::go_to_configuration_aux, this, q_des, duration_s);
   t.detach();
 };
 
-void Go2RobotInterface::consume_state(
-    const unitree_go::msg::LowState::SharedPtr msg) {
+void Go2RobotInterface::consume_state(const unitree_go::msg::LowState::SharedPtr msg)
+{
   // Copy the /lowstate message
   state_ = msg;
 
   // Process the motor states
-  for (size_t source_idx = 0; source_idx < 12; source_idx++) {
+  for (size_t source_idx = 0; source_idx < 12; source_idx++)
+  {
     size_t target_idx = target_joint_idx_[source_idx];
     state_q_[source_idx] = state_->motor_state[target_idx].q;
     state_dq_[source_idx] = state_->motor_state[target_idx].dq;
@@ -205,7 +213,8 @@ void Go2RobotInterface::consume_state(
     state_tau_[source_idx] = state_->motor_state[target_idx].tau_est;
   }
   // Process the quaternion and foot forces
-  for (size_t i = 0; i < 4; i++) {
+  for (size_t i = 0; i < 4; i++)
+  {
     // Both RobotInterface and unitree /LowState use [w, x, y, z] quaternions
     quaternion_[i] = state_->imu_state.quaternion[i];
 
@@ -213,13 +222,15 @@ void Go2RobotInterface::consume_state(
     foot_forces_[i] = state_->foot_force[foot_idx];
   }
   // Process the IMU state
-  for (size_t i = 0; i < 3; i++) {
+  for (size_t i = 0; i < 3; i++)
+  {
     imu_lin_acc_[i] = state_->imu_state.accelerometer[i];
     imu_ang_vel_[i] = state_->imu_state.gyroscope[i];
   }
 }
 
-void Go2RobotInterface::consume(const std_msgs::msg::Bool::SharedPtr msg) {
+void Go2RobotInterface::consume(const std_msgs::msg::Bool::SharedPtr msg)
+{
   // Copy the /watchdog/is_safe message
   is_safe_ = msg->data;
 }

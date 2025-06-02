@@ -37,7 +37,7 @@ macro(onnx_dependencies)
     endif()
 
     message(STATUS "ONNXRUNTIME_LIBS: ${ONNXRUNTIME_LIBS}")
-        
+
     # Library path: ${onnxruntime_SOURCE_DIR}/lib/libonnxruntime.so
     # Include path: ${onnxruntime_SOURCE_DIR}/include/
     add_library(onnxruntime SHARED IMPORTED)

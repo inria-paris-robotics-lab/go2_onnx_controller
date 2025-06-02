@@ -2,7 +2,8 @@
 // https://github.com/unitreerobotics/unitree_ros2/blob/master/example/src/src/common/motor_crc.cpp
 #include "motor_crc.hpp"
 
-void get_crc(unitree_go::msg::LowCmd &msg) {
+void get_crc(unitree_go::msg::LowCmd & msg)
+{
   LowCmd raw{};
   memcpy(&raw.head[0], &msg.head[0], 2);
 
@@ -14,7 +15,8 @@ void get_crc(unitree_go::msg::LowCmd &msg) {
 
   raw.bandWidth = msg.bandwidth;
 
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 20; i++)
+  {
     raw.motorCmd[i].mode = msg.motor_cmd[i].mode;
     raw.motorCmd[i].q = msg.motor_cmd[i].q;
     raw.motorCmd[i].dq = msg.motor_cmd[i].dq;
@@ -40,19 +42,24 @@ void get_crc(unitree_go::msg::LowCmd &msg) {
   msg.crc = raw.crc;
 }
 
-uint32_t crc32_core(uint32_t *ptr, uint32_t len) {
+uint32_t crc32_core(uint32_t * ptr, uint32_t len)
+{
   uint32_t xbit = 0;
   uint32_t data = 0;
   uint32_t CRC32 = 0xFFFFFFFF;
   const uint32_t dwPolynomial = 0x04c11db7;
-  for (uint32_t i = 0; i < len; i++) {
+  for (uint32_t i = 0; i < len; i++)
+  {
     xbit = 1 << 31;
     data = ptr[i];
-    for (uint32_t bits = 0; bits < 32; bits++) {
-      if (CRC32 & 0x80000000) {
+    for (uint32_t bits = 0; bits < 32; bits++)
+    {
+      if (CRC32 & 0x80000000)
+      {
         CRC32 <<= 1;
         CRC32 ^= dwPolynomial;
-      } else
+      }
+      else
         CRC32 <<= 1;
       if (data & xbit)
         CRC32 ^= dwPolynomial;

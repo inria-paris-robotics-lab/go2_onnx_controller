@@ -38,12 +38,14 @@ constexpr int RL_0 = 9;
 constexpr int RL_1 = 10;
 constexpr int RL_2 = 11;
 
-typedef struct {
+typedef struct
+{
   uint8_t off; // off 0xA5
   std::array<uint8_t, 3> reserve;
 } BmsCmd;
 
-typedef struct {
+typedef struct
+{
   uint8_t mode; // desired working mode
   float q;      // desired angle (unit: radian)
   float dq;     // desired velocity (unit: radian/second)
@@ -53,7 +55,8 @@ typedef struct {
   std::array<uint32_t, 3> reserve;
 } MotorCmd; // motor control
 
-typedef struct {
+typedef struct
+{
   std::array<uint8_t, 2> head;
   uint8_t levelFlag;
   uint8_t frameReserve;
@@ -72,7 +75,7 @@ typedef struct {
   uint32_t crc;
 } LowCmd;
 
-uint32_t crc32_core(uint32_t *ptr, uint32_t len);
-void get_crc(unitree_go::msg::LowCmd &msg);
+uint32_t crc32_core(uint32_t * ptr, uint32_t len);
+void get_crc(unitree_go::msg::LowCmd & msg);
 
 #endif

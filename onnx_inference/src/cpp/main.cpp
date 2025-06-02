@@ -1,24 +1,28 @@
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <string>
-#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include "onnx_actor.hpp"
 
 constexpr unsigned int kInputSize = 98;
-void print_vec(const std::span<float> &vec, const std::string &name) {
+void print_vec(const std::span<float> & vec, const std::string & name)
+{
   std::cout << name << ": [";
-  for (size_t i = 0; i < vec.size(); ++i) {
+  for (size_t i = 0; i < vec.size(); ++i)
+  {
     std::cout << vec[i];
-    if (i < vec.size() - 1) {
+    if (i < vec.size() - 1)
+    {
       std::cout << ",  ";
     }
   }
   std::cout << "]" << std::endl;
 }
 
-int main() {
+int main()
+{
   Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
 
   // Build full path to model
@@ -35,10 +39,7 @@ int main() {
   actor.act();
   const auto end = std::chrono::steady_clock::now();
 
-  std::cout << "Inference took "
-            << std::chrono::duration_cast<std::chrono::microseconds>(end -
-                                                                     start)
-            << std::endl;
+  std::cout << "Inference took " << std::chrono::duration_cast<std::chrono::microseconds>(end - start) << std::endl;
 
   // Print the action
   print_vec(action, "Action");

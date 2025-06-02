@@ -1,9 +1,9 @@
 #include "controller.hpp"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
 #include <iostream>
 #include <string>
-#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include "motor_crc.hpp"
 #include "onnx_actor.hpp"
@@ -12,7 +12,8 @@
 
 using namespace std::chrono_literals;
 
-std::string get_model_path() {
+std::string get_model_path()
+{
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
   std::string model_path = package_share_dir + "/data/model.onnx";
 
@@ -20,32 +21,28 @@ std::string get_model_path() {
 }
 
 ONNXController::ONNXController()
-    : Node("onnx_controller"), joy_(std::make_shared<sensor_msgs::msg::Joy>()),
-      obs_act_(std::make_shared<onnx_interfaces::msg::ObservationAction>()) {
+: Node("onnx_controller")
+, joy_(std::make_shared<sensor_msgs::msg::Joy>())
+, obs_act_(std::make_shared<onnx_interfaces::msg::ObservationAction>())
+{
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
-      robot_interface_ = std::make_unique<Go2RobotInterface>(
-          *this, isaac_joint_names_, isaac_feet_names_);
+    robot_interface_ = std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_, isaac_feet_names_);
 
   // Set parameters
   this->declare_parameter("kp", kp_);
   this->declare_parameter("kd", kd_);
 
-  auto param_change_callback =
-      [this](const std::vector<rclcpp::Parameter> &params) {
-        return set_param_callback(params);
-      };
-
-  parameter_callback_handle_ =
-      this->add_on_set_parameters_callback(param_change_callback);
-
-  // Subscribe to the Joy topic
-  auto joy_callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) {
-    consume(msg);
+  auto param_change_callback = [this](const std::vector<rclcpp::Parameter> & params) {
+    return set_param_callback(params);
   };
 
-  joy_subscription_ =
-      this->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joy_callback);
+  parameter_callback_handle_ = this->add_on_set_parameters_callback(param_change_callback);
+
+  // Subscribe to the Joy topic
+  auto joy_callback = [this](const sensor_msgs::msg::Joy::SharedPtr msg) { consume(msg); };
+
+  joy_subscription_ = this->create_subscription<sensor_msgs::msg::Joy>("/joy", 5, joy_callback);
 
   // Print the ONNXActor
   actor_->print_model_info();
@@ -53,86 +50,98 @@ ONNXController::ONNXController()
   // Print vectors
   print_vecs();
 
-  RCLCPP_INFO(this->get_logger(),
-              "ONNXController initialised, going to initial "
-              "pose and waiting for Joy message.");
+  RCLCPP_INFO(
+    this->get_logger(), "ONNXController initialised, going to initial "
+                        "pose and waiting for Joy message.");
 
   robot_interface_->go_to_configuration(q0_, 5.0);
 
   // Set the timer to publish at 50 Hz
-  timer_ =
-      this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
+  timer_ = this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
 }
 
-void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg) {
+void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg)
+{
   // Copy the Joy message
   joy_ = msg;
 }
 
-void ONNXController::print_vecs() {
+void ONNXController::print_vecs()
+{
   // Print observation and action
   std::cout << "Observation: ";
-  for (size_t i = 0; i < observation_.size(); i++) {
+  for (size_t i = 0; i < observation_.size(); i++)
+  {
     std::cout << observation_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "gravity_b_hist_: ";
-  for (size_t i = 0; i < gravity_b_hist_.size(); i++) {
+  for (size_t i = 0; i < gravity_b_hist_.size(); i++)
+  {
     std::cout << gravity_b_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "base_ang_vel_hist_: ";
-  for (size_t i = 0; i < base_ang_vel_hist_.size(); i++) {
+  for (size_t i = 0; i < base_ang_vel_hist_.size(); i++)
+  {
     std::cout << base_ang_vel_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "imu_lin_acc_hist_: ";
-  for (size_t i = 0; i < imu_lin_acc_hist_.size(); i++) {
+  for (size_t i = 0; i < imu_lin_acc_hist_.size(); i++)
+  {
     std::cout << imu_lin_acc_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "vel_cmd_hist_: ";
-  for (size_t i = 0; i < vel_cmd_hist_.size(); i++) {
+  for (size_t i = 0; i < vel_cmd_hist_.size(); i++)
+  {
     std::cout << vel_cmd_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "q_hist_: ";
-  for (size_t i = 0; i < q_hist_.size(); i++) {
+  for (size_t i = 0; i < q_hist_.size(); i++)
+  {
     std::cout << q_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "dq_hist_: ";
-  for (size_t i = 0; i < dq_hist_.size(); i++) {
+  for (size_t i = 0; i < dq_hist_.size(); i++)
+  {
     std::cout << dq_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "action_hist_: ";
-  for (size_t i = 0; i < action_hist_.size(); i++) {
+  for (size_t i = 0; i < action_hist_.size(); i++)
+  {
     std::cout << action_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "foot_forces_hist_: ";
-  for (size_t i = 0; i < foot_forces_hist_.size(); i++) {
+  for (size_t i = 0; i < foot_forces_hist_.size(); i++)
+  {
     std::cout << foot_forces_hist_[i] << ", ";
   }
   std::cout << std::endl;
 
   std::cout << "Action: " << std::endl;
-  for (size_t i = 0; i < action_.size(); i++) {
+  for (size_t i = 0; i < action_.size(); i++)
+  {
     std::cout << i << ": " << action_[i] << std::endl;
   }
   std::cout << std::endl;
 
   std::cout << "Velocity command: " << std::endl;
-  for (size_t i = 0; i < vel_cmd_.size(); i++) {
+  for (size_t i = 0; i < vel_cmd_.size(); i++)
+  {
     std::cout << i << ": " << vel_cmd_[i] << std::endl;
   }
   std::cout << std::endl;
@@ -143,21 +152,25 @@ void ONNXController::print_vecs() {
   std::cout << std::endl;
 }
 
-void ONNXController::publish() {
-  if (!robot_interface_->is_ready()) {
+void ONNXController::publish()
+{
+  if (!robot_interface_->is_ready())
+  {
     /*RCLCPP_WARN(this->get_logger(),
                 "ONNXController::publish() Robot is not ready, cannot "
                 "send command!"); */
     return;
   }
-  if (!robot_interface_->is_safe()) {
-    RCLCPP_WARN(this->get_logger(),
-                "ONNXController::publish() Robot is not safe, cannot "
-                "send command!");
+  if (!robot_interface_->is_safe())
+  {
+    RCLCPP_WARN(
+      this->get_logger(), "ONNXController::publish() Robot is not safe, cannot "
+                          "send command!");
     return;
   }
 
-  if (joy_ && !joy_->axes.empty()) {
+  if (joy_ && !joy_->axes.empty())
+  {
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
     vel_cmd_[1] = pow(joy_->axes[0], 2) * ((joy_->axes[0] > 0) ? 1 : -1) * 0.8;
@@ -178,12 +191,14 @@ void ONNXController::publish() {
   base_ang_vel_ = robot_interface_->get_ang_vel();
 
   // Read foot contact state
-  for (uint8_t i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i < 4; i++)
+  {
     foot_forces_[i] = robot_interface_->get_forces()[i] >= 22;
   }
 
   // Subtract the q0_ initial pose from the joint positions
-  for (uint8_t i = 0; i < 12; i++) {
+  for (uint8_t i = 0; i < 12; i++)
+  {
     q_[i] -= q0_[i];
   }
 
@@ -198,18 +213,19 @@ void ONNXController::publish() {
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(observation_, gravity_b_hist_, base_ang_vel_hist_,
-                  /*imu_lin_acc_hist_,*/ vel_cmd_hist_, q_hist_, dq_hist_,
-                  action_hist_, foot_forces_hist_);
+  populate_buffer(
+    observation_, gravity_b_hist_, base_ang_vel_hist_,
+    /*imu_lin_acc_hist_,*/ vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
 
   // Run the ONNX model (writes to action_)
   actor_->act();
 
   // Clamp the action between -+ kActionLimit
-  for (float &a : action_) {
+  for (float & a : action_)
+  {
     a = std::clamp(a, -kActionLimit, kActionLimit);
     a *= joy_->buttons[0] == 0; // lower button (i.e. X-button on PS) zeroes the
-                           // action
+                                // action
   }
 
   // Populate the message
@@ -227,7 +243,8 @@ void ONNXController::publish() {
   std::array<float, 12> kp_array{};
   std::array<float, 12> kd_array{};
 
-  for (size_t i = 0; i < 12; i++) {
+  for (size_t i = 0; i < 12; i++)
+  {
     // The policy expects the prev. action in the scale it outputs them,
     // so we do the scaling only before sanding the commands to the actuators.
     q_des[i] = q0_[i] + action_[i] * 0.25;
@@ -240,17 +257,24 @@ void ONNXController::publish() {
   robot_interface_->send_command(q_des, zeroes, zeroes, kp_array, kd_array);
 }
 
-rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
-    const std::vector<rclcpp::Parameter> &params) {
+rcl_interfaces::msg::SetParametersResult
+ONNXController::set_param_callback(const std::vector<rclcpp::Parameter> & params)
+{
   rcl_interfaces::msg::SetParametersResult result;
   result.successful = true;
 
-  for (const auto &param : params) {
-    if (param.get_name() == "kp") {
+  for (const auto & param : params)
+  {
+    if (param.get_name() == "kp")
+    {
       kp_ = param.as_double();
-    } else if (param.get_name() == "kd") {
+    }
+    else if (param.get_name() == "kd")
+    {
       kd_ = param.as_double();
-    } else {
+    }
+    else
+    {
       result.successful = false;
     }
   }
@@ -258,7 +282,8 @@ rcl_interfaces::msg::SetParametersResult ONNXController::set_param_callback(
   return result;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char * argv[])
+{
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<ONNXController>());
   rclcpp::shutdown();
