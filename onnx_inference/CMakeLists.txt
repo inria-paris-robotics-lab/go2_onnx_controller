@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project("onnx-actor"
+project("onnx_inference"
         VERSION 0.1
         DESCRIPTION "Inference with ONNX models"
         LANGUAGES CXX)
@@ -10,6 +10,8 @@ if(CMAKE_BINARY_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
+
+find_package(ament_cmake REQUIRED)
 
 include(cmake/dependencies.cmake)
 onnx_dependencies()
@@ -40,3 +42,5 @@ install(TARGETS onnx-inference
 # Install the header files
 install(DIRECTORY include/ DESTINATION include)
 install(FILES ${CMAKE_BINARY_DIR}/data/model.onnx DESTINATION ~/.local/share/.onnx-actor/)
+
+ament_package()
