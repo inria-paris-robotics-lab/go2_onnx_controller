@@ -14,3 +14,21 @@ Go2 ONNX Controller
     colcon build --packages-skip unitree_sdk2_python
     source install/setup.bash
     ```
+
+## How to run
+0. A joystick needs to be plugged in the computer
+1. See [Go2_control_interface: How to control the robot](https://github.com/inria-paris-robotics-lab/go2_control_interface?tab=readme-ov-file#how-to-control-the-robot). Most likely you will run:
+    ```bash
+    # mamba activate go2_control_interface
+    # source install/setup.bash
+    # source <(ros2 run go2_control_interface autoset_environment_dds.py SIMULATION)
+    ros2 launch go2_simulation launch_sim.launch.py
+    ```
+    to start the simulation.
+1. In another terminal:
+    ```bash
+    # mamba activate go2_control_interface
+    # source install/setup.bash
+    # source <(ros2 run go2_control_interface autoset_environment_dds.py SIMULATION)
+    ros2 launch onnx_controller controller_and_joystick.launch.py
+    ```

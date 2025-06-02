@@ -63,9 +63,10 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# Optionally install headers
-install(DIRECTORY include/
-  DESTINATION include
+# Install launchfile
+install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}/
 )
 
 ament_package()
