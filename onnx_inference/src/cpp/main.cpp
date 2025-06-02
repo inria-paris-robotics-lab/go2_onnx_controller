@@ -20,12 +20,6 @@ void print_vec(const std::span<float> &vec, const std::string &name) {
 
 int main() {
   Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "test");
-  std::string home = std::getenv("HOME");
-
-  if (home.empty()) {
-    std::cerr << "Error: HOME environment variable not set." << std::endl;
-    return 1;
-  }
 
   // Build full path to model
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");

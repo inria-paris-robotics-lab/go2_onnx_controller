@@ -1,13 +1,9 @@
 #include "controller.hpp"
 
-#include <algorithm>
-#include <array>
-#include <chrono>
 #include <cmath>
-#include <cstddef>
-#include <fstream>
-#include <memory>
+#include <iostream>
 #include <string>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include "motor_crc.hpp"
 #include "onnx_actor.hpp"
@@ -17,13 +13,8 @@
 using namespace std::chrono_literals;
 
 std::string get_model_path() {
-  std::string home = std::getenv("HOME");
-
-  if (home.empty()) {
-    std::cerr << "Error: HOME environment variable not set." << std::endl;
-  }
-
-  std::string model_path = home + "/.local/share/.onnx_actor/model.onnx";
+  std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
+  std::string model_path = package_share_dir + "/data/model.onnx";
 
   return model_path;
 }
