@@ -199,7 +199,7 @@ private:
 
   // Safety flags
   volatile bool is_ready_ = false; ///< True if the robot has been successfully initialised.
-  volatile bool is_safe_ = true;   ///< True if it is safe to publish commands.
+  volatile bool is_safe_ = false;  ///< True if it is safe to publish commands.
 
   // Robot state
   // Inertial state
