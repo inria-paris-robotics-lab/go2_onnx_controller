@@ -10,6 +10,7 @@
   <depend>unitree_go</depend>
   <depend>onnx_inference</depend>
   <depend>onnx_interfaces</depend>
+  <depend>go2_control_interface</depend>
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>

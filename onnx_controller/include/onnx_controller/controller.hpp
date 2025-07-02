@@ -2,16 +2,15 @@
 
 #include <cstdint>
 #include <memory>
-#include <string>
 
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/Geometry"
+#include "go2_control_interface_cpp/robot_interface.hpp"
 #include "onnx_actor.hpp"
 #include "onnx_interfaces/msg/observation_action.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "robot_interface.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "unitree_go/msg/low_state.hpp"
 
+constexpr size_t kDimDOF = 12;
 constexpr size_t kDimObs = 49;
 constexpr size_t kHistory = 2;
 constexpr float kActionLimit = 1000; // Clip the actions to -+ this limit
@@ -87,6 +86,30 @@ private:
    */
   rcl_interfaces::msg::SetParametersResult set_param_callback(const std::vector<rclcpp::Parameter> & params);
 
+  /**
+   * @brief Read IMU data from LowState message
+   */
+  void lowstate_cb_(const unitree_go::msg::LowState::SharedPtr msg)
+  {
+    // Process the quaternion and foot forces
+    quaternion_ = Eigen::Quaternion(
+      msg->imu_state.quaternion[0], msg->imu_state.quaternion[1], msg->imu_state.quaternion[2],
+      msg->imu_state.quaternion[3]);
+
+    // Swap feet because of unitree <-> isaac conventions
+    foot_forces_[0] = msg->foot_force[1] >= 22;
+    foot_forces_[1] = msg->foot_force[0] >= 22;
+    foot_forces_[2] = msg->foot_force[3] >= 22;
+    foot_forces_[3] = msg->foot_force[2] >= 22;
+
+    // Process the IMU state
+    for (size_t i = 0; i < 3; i++)
+    {
+      imu_lin_acc_[i] = msg->imu_state.accelerometer[i];
+      base_ang_vel_[i] = msg->imu_state.gyroscope[i];
+    }
+  }
+
   rclcpp::TimerBase::SharedPtr timer_;                                      ///< Timer for publishing commands
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscription_; ///< Subscription to the Joy topic
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
@@ -98,9 +121,12 @@ private:
 
   sensor_msgs::msg::Joy::SharedPtr joy_;                       ///< Pointer to the Joy message
   onnx_interfaces::msg::ObservationAction::SharedPtr obs_act_; ///< Pointer to the ObservationAction message
+  rclcpp::Publisher<onnx_interfaces::msg::ObservationAction>::SharedPtr obs_act_publisher_;
 
   std::unique_ptr<Go2RobotInterface> robot_interface_; ///< Robot interface object
   std::unique_ptr<ONNXActor> actor_;                   ///< ONNXActor object
+  rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr
+    state_subscription_; ///< Get embeded imu & sensors via LowState
 
   // Gravity vector
   static constexpr std::array<float, 3> gravity_w_{0., 0., -1.}; ///< Gravity direction in the world
@@ -136,7 +162,7 @@ private:
   std::array<uint16_t, 4 * kHistory> foot_forces_hist_{}; ///< Foot force history
 
   //! Initial pose (in radians, Isaac order)
-  static constexpr std::array<float, 12> q0_ = {0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5};
+  Eigen::Vector<double, 12> q0_{0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5};
 
   //! Joint names (Isaac does breadth-first traversal)
   static constexpr std::array<std::string_view, 12> isaac_joint_names_ = {
