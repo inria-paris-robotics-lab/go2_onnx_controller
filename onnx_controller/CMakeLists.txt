@@ -9,6 +9,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(onnx_interfaces REQUIRED)
 find_package(onnx_inference REQUIRED)
+find_package(go2_control_interface REQUIRED)
 
 # C++ standard and compiler options
 set(CMAKE_CXX_STANDARD 20)
@@ -31,8 +32,6 @@ FetchContent_MakeAvailable(mcap_builder)
 # Add executable target
 add_executable(controller
   src/controller.cpp
-  src/motor_crc.cpp
-  src/robot_interface.cpp
 )
 
 # Include paths
@@ -45,6 +44,8 @@ target_include_directories(controller PUBLIC
 # Assuming onnx_actor and mcap are built targets or available via dependencies
 target_link_libraries(controller
   onnx_inference::onnx_actor
+  go2_control_interface::go2_control_interface_cpp
+  Eigen3::Eigen
   onnxruntime
   mcap
 )

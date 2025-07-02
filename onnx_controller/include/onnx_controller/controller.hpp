@@ -2,16 +2,14 @@
 
 #include <cstdint>
 #include <memory>
-#include <string>
 
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/Geometry"
+#include "go2_control_interface_cpp/robot_interface.hpp"
 #include "onnx_actor.hpp"
 #include "onnx_interfaces/msg/observation_action.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "robot_interface.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 
+constexpr size_t kDimDOF = 12;
 constexpr size_t kDimObs = 49;
 constexpr size_t kHistory = 2;
 constexpr float kActionLimit = 1000; // Clip the actions to -+ this limit

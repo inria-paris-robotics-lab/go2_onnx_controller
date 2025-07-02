@@ -2,13 +2,10 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <cmath>
-#include <iostream>
 #include <string>
 
-#include "motor_crc.hpp"
-#include "onnx_actor.hpp"
+#include "go2_control_interface_cpp/robot_interface.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "robot_interface.hpp"
 
 using namespace std::chrono_literals;
 
