@@ -24,7 +24,11 @@ ONNXController::ONNXController()
 {
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
-    robot_interface_ = std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_, isaac_feet_names_);
+    robot_interface_ = std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
+  state_subscription_ = this->create_subscription<unitree_go::msg::LowState>(
+    "/lowstate", 10, std::bind(&ONNXController::lowstate_cb_, this, std::placeholders::_1));
+
+  obs_act_publisher_ = this->create_publisher<onnx_interfaces::msg::ObservationAction>("/observation_action", 10);
 
   // Set parameters
   this->declare_parameter("kp", kp_);
@@ -175,22 +179,15 @@ void ONNXController::publish()
   }
 
   // Project the gravity into base frame
-  std::array<float, 4> quat = robot_interface_->get_quaternion();
-  quaternion_ = Eigen::Quaternion(quat[0], quat[1], quat[2], quat[3]);
   Eigen::Map<const Eigen::Vector3f> vec(gravity_w_.data());
   Eigen::Map<Eigen::Vector3f> gb_map(gravity_b_.data());
   gb_map = quaternion_.inverse() * vec;
 
   // Get the current state
-  q_ = robot_interface_->get_q();
-  dq_ = robot_interface_->get_dq();
-  imu_lin_acc_ = robot_interface_->get_lin_acc();
-  base_ang_vel_ = robot_interface_->get_ang_vel();
-
-  // Read foot contact state
-  for (uint8_t i = 0; i < 4; i++)
+  for (int i = 0; i < 12; i++)
   {
-    foot_forces_[i] = robot_interface_->get_forces()[i] >= 22;
+    q_[i] = robot_interface_->get_q()[i];
+    dq_[i] = robot_interface_->get_dq()[i];
   }
 
   // Subtract the q0_ initial pose from the joint positions
@@ -229,7 +226,7 @@ void ONNXController::publish()
   obs_act_->observation = observation_;
   obs_act_->action = action_;
 
-  robot_interface_->publish_obs_act(obs_act_);
+  obs_act_publisher_->publish(*obs_act_.get());
 
   // Print observation and action
   print_vecs();

@@ -8,6 +8,7 @@
 #include "onnx_interfaces/msg/observation_action.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
+#include "unitree_go/msg/low_state.hpp"
 
 constexpr size_t kDimDOF = 12;
 constexpr size_t kDimObs = 49;
@@ -85,6 +86,30 @@ private:
    */
   rcl_interfaces::msg::SetParametersResult set_param_callback(const std::vector<rclcpp::Parameter> & params);
 
+  /**
+   * @brief Read IMU data from LowState message
+   */
+  void lowstate_cb_(const unitree_go::msg::LowState::SharedPtr msg)
+  {
+    // Process the quaternion and foot forces
+    quaternion_ = Eigen::Quaternion(
+      msg->imu_state.quaternion[0], msg->imu_state.quaternion[1], msg->imu_state.quaternion[2],
+      msg->imu_state.quaternion[3]);
+
+    // Swap feet because of unitree <-> isaac conventions
+    foot_forces_[0] = msg->foot_force[1] >= 22;
+    foot_forces_[1] = msg->foot_force[0] >= 22;
+    foot_forces_[2] = msg->foot_force[3] >= 22;
+    foot_forces_[3] = msg->foot_force[2] >= 22;
+
+    // Process the IMU state
+    for (size_t i = 0; i < 3; i++)
+    {
+      imu_lin_acc_[i] = msg->imu_state.accelerometer[i];
+      base_ang_vel_[i] = msg->imu_state.gyroscope[i];
+    }
+  }
+
   rclcpp::TimerBase::SharedPtr timer_;                                      ///< Timer for publishing commands
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscription_; ///< Subscription to the Joy topic
   rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr
@@ -96,9 +121,12 @@ private:
 
   sensor_msgs::msg::Joy::SharedPtr joy_;                       ///< Pointer to the Joy message
   onnx_interfaces::msg::ObservationAction::SharedPtr obs_act_; ///< Pointer to the ObservationAction message
+  rclcpp::Publisher<onnx_interfaces::msg::ObservationAction>::SharedPtr obs_act_publisher_;
 
   std::unique_ptr<Go2RobotInterface> robot_interface_; ///< Robot interface object
   std::unique_ptr<ONNXActor> actor_;                   ///< ONNXActor object
+  rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr
+    state_subscription_; ///< Get embeded imu & sensors via LowState
 
   // Gravity vector
   static constexpr std::array<float, 3> gravity_w_{0., 0., -1.}; ///< Gravity direction in the world
