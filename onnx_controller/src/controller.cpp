@@ -51,7 +51,7 @@ ONNXController::ONNXController()
     this->get_logger(), "ONNXController initialised, going to initial "
                         "pose and waiting for Joy message.");
 
-  robot_interface_->go_to_configuration(q0_, 5.0);
+  robot_interface_->start_async(q0_);
 
   // Set the timer to publish at 50 Hz
   timer_ = this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
@@ -235,10 +235,10 @@ void ONNXController::publish()
   print_vecs();
 
   // Prepare the arrays for the robot interface
-  std::array<float, 12> q_des{};
-  std::array<float, 12> zeroes{};
-  std::array<float, 12> kp_array{};
-  std::array<float, 12> kd_array{};
+  Eigen::Vector<double, 12> q_des{};
+  Eigen::Vector<double, 12> zeroes = Eigen::Vector<double, 12>::Zero();
+  Eigen::Vector<double, 12> kp_array{};
+  Eigen::Vector<double, 12> kd_array{};
 
   for (size_t i = 0; i < 12; i++)
   {
