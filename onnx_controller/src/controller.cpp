@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 std::string get_model_path()
 {
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
-  std::string model_path = package_share_dir + "/data/model.onnx";
+  std::string model_path = package_share_dir + "/data/actor_feet_air.onnx";
 
   return model_path;
 }
@@ -24,7 +24,7 @@ ONNXController::ONNXController()
 {
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
-    robot_interface_ = std::make_unique<Go2RobotInterface>(*this, isaac_joint_names_);
+    robot_interface_ = std::make_unique<Go2RobotInterface>(*this, simple_joint_names_);
   state_subscription_ = this->create_subscription<unitree_go::msg::LowState>(
     "/lowstate", 10, std::bind(&ONNXController::lowstate_cb_, this, std::placeholders::_1));
 
@@ -55,7 +55,7 @@ ONNXController::ONNXController()
     this->get_logger(), "ONNXController initialised, going to initial "
                         "pose and waiting for Joy message.");
 
-  robot_interface_->start_async(q0_);
+  robot_interface_->start_async(q0_simple_, 8.0);
 
   // Set the timer to publish at 50 Hz
   timer_ = this->create_wall_timer(20ms, std::bind(&ONNXController::publish, this));
@@ -70,82 +70,49 @@ void ONNXController::consume(const sensor_msgs::msg::Joy::SharedPtr msg)
 void ONNXController::print_vecs()
 {
   // Print observation and action
-  std::cout << "Observation: ";
-  for (size_t i = 0; i < observation_.size(); i++)
-  {
-    std::cout << observation_[i] << ", ";
-  }
-  std::cout << std::endl;
+  std::cout << "---- Observation Components ----" << std::endl;
 
-  std::cout << "gravity_b_hist_: ";
-  for (size_t i = 0; i < gravity_b_hist_.size(); i++)
-  {
-    std::cout << gravity_b_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
+  std::cout << "xyzw quaternion:         [";
+  std::cout << std::fixed << std::setprecision(4) << quaternion_.x() << ", " << quaternion_.y() << ", "
+            << quaternion_.z() << ", " << quaternion_.w();
+  std::cout << "]" << std::endl;
 
-  std::cout << "base_ang_vel_hist_: ";
-  for (size_t i = 0; i < base_ang_vel_hist_.size(); i++)
-  {
-    std::cout << base_ang_vel_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
+  std::cout << "q (Simple order):        [";
+  for (size_t i = 0; i < q_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << q_[i] << (i < q_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
 
-  std::cout << "imu_lin_acc_hist_: ";
-  for (size_t i = 0; i < imu_lin_acc_hist_.size(); i++)
-  {
-    std::cout << imu_lin_acc_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
+  std::cout << "dq (Simple order):       [";
+  for (size_t i = 0; i < dq_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << dq_[i] << (i < dq_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
 
-  std::cout << "vel_cmd_hist_: ";
-  for (size_t i = 0; i < vel_cmd_hist_.size(); i++)
-  {
-    std::cout << vel_cmd_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
+  std::cout << "base_ang_vel:            [";
+  for (size_t i = 0; i < base_ang_vel_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << base_ang_vel_[i] << (i < base_ang_vel_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
 
-  std::cout << "q_hist_: ";
-  for (size_t i = 0; i < q_hist_.size(); i++)
-  {
-    std::cout << q_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
+  std::cout << "gravity_b:               [";
+  for (size_t i = 0; i < gravity_b_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << gravity_b_[i] << (i < gravity_b_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
 
-  std::cout << "dq_hist_: ";
-  for (size_t i = 0; i < dq_hist_.size(); i++)
-  {
-    std::cout << dq_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "action_hist_: ";
-  for (size_t i = 0; i < action_hist_.size(); i++)
-  {
-    std::cout << action_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "foot_forces_hist_: ";
-  for (size_t i = 0; i < foot_forces_hist_.size(); i++)
-  {
-    std::cout << foot_forces_hist_[i] << ", ";
-  }
-  std::cout << std::endl;
-
-  std::cout << "Action: " << std::endl;
-  for (size_t i = 0; i < action_.size(); i++)
-  {
-    std::cout << i << ": " << action_[i] << std::endl;
-  }
-  std::cout << std::endl;
-
-  std::cout << "Velocity command: " << std::endl;
+  std::cout << "vel_cmd:                 [";
   for (size_t i = 0; i < vel_cmd_.size(); i++)
-  {
-    std::cout << i << ": " << vel_cmd_[i] << std::endl;
-  }
-  std::cout << std::endl;
+    std::cout << std::fixed << std::setprecision(4) << vel_cmd_[i] << (i < vel_cmd_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
+
+  std::cout << "action (last, Simple):    [" << std::endl;
+  for (size_t i = 0; i < action_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << action_[i] << (i < action_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
+
+  std::cout << "foot_forces:             [";
+  for (size_t i = 0; i < foot_forces_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << foot_forces_[i] << (i < foot_forces_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
+
+  std::cout << "-------------------------------" << std::endl;
 
   std::cout << "kp: " << kp_ << std::endl;
   std::cout << "kd: " << kd_ << std::endl;
@@ -190,14 +157,11 @@ void ONNXController::publish()
     dq_[i] = robot_interface_->get_dq()[i];
   }
 
-  // Subtract the q0_ initial pose from the joint positions
-  for (uint8_t i = 0; i < 12; i++)
-  {
-    q_[i] -= q0_[i];
-  }
+  std::array<double, 4> xyzw_quat_{quaternion_.x(), quaternion_.y(), quaternion_.z(), quaternion_.w()};
 
   // Prepare the buffers
-  populate_buffer(gravity_b_hist_, gravity_b_);
+  populate_buffer(quaternion_hist, xyzw_quat_);
+  populate_buffer(gravity_b_hist_, gb_map);
   populate_buffer(base_ang_vel_hist_, base_ang_vel_);
   // populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
   populate_buffer(vel_cmd_hist_, vel_cmd_);
@@ -208,8 +172,8 @@ void ONNXController::publish()
 
   // Push all buffers into history
   populate_buffer(
-    observation_, gravity_b_hist_, base_ang_vel_hist_,
-    /*imu_lin_acc_hist_,*/ vel_cmd_hist_, q_hist_, dq_hist_, action_hist_, foot_forces_hist_);
+    observation_, xyzw_quat_, q_,
+    /*imu_lin_acc_hist_,*/ base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_, foot_forces_);
 
   // Run the ONNX model (writes to action_)
   actor_->act();
@@ -241,7 +205,7 @@ void ONNXController::publish()
   {
     // The policy expects the prev. action in the scale it outputs them,
     // so we do the scaling only before sanding the commands to the actuators.
-    q_des[i] = q0_[i] + action_[i] * 0.25;
+    q_des[i] = q0_simple_[i] - action_[i] * 0.8;
     zeroes[i] = 0.0;
     kp_array[i] = joy_->buttons[0] == 0 ? kp_ : 5;
     kd_array[i] = kd_;

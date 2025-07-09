@@ -27,7 +27,7 @@ int main()
 
   // Build full path to model
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
-  std::string model_path = package_share_dir + "/data/model.onnx";
+  std::string model_path = package_share_dir + "/data/actor_feet_air.onnx";
 
   std::array<float, kInputSize> observation{0.0};
   std::array<float, 12> action{0.0};
