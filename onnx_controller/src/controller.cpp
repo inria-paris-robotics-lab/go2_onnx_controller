@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 std::string get_model_path()
 {
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
-  std::string model_path = package_share_dir + "/data/actor_feet_air.onnx";
+  std::string model_path = package_share_dir + "/data/standing.onnx";
 
   return model_path;
 }
