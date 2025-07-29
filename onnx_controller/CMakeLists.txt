@@ -29,6 +29,8 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(mcap_builder)
 
+link_directories(/home/rcrisita/unitree_ros2/cyclonedds_ws/install/onnx_inference/lib)
+
 # Add executable target
 add_executable(controller
   src/controller.cpp

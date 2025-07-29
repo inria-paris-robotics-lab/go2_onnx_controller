@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 std::string get_model_path()
 {
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
-  std::string model_path = package_share_dir + "/data/standing.onnx";
+  std::string model_path = package_share_dir + "/data/standing_high_post3.onnx";
 
   return model_path;
 }
@@ -171,9 +171,11 @@ void ONNXController::publish()
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(
-    observation_, xyzw_quat_, q_,
-    /*imu_lin_acc_hist_,*/ base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_, foot_forces_);
+  // populate_buffer(
+  //   observation_, xyzw_quat_, q_,
+  //   /*imu_lin_acc_hist_,*/ base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_, foot_forces_);
+
+    populate_buffer(observation_, q_, action_, foot_forces_);
 
   // Run the ONNX model (writes to action_)
   actor_->act();

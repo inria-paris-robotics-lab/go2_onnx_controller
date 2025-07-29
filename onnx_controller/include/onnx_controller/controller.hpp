@@ -11,7 +11,7 @@
 #include "unitree_go/msg/low_state.hpp"
 
 constexpr size_t kDimDOF = 12;
-constexpr size_t kDimObs = 53;
+constexpr size_t kDimObs = 28;
 constexpr size_t kHistory = 1;
 constexpr float kActionLimit = 1000; // Clip the actions to -+ this limit
 
@@ -116,7 +116,7 @@ private:
     parameter_callback_handle_; ///< Handle for the parameter callback
 
   // Torque control parameters
-  float kp_ = 28.0; ///< Proportional gain
+  float kp_ = 20.0; ///< Proportional gain
   float kd_ = 2.5;  ///< Derivative gain
 
   sensor_msgs::msg::Joy::SharedPtr joy_;                       ///< Pointer to the Joy message
