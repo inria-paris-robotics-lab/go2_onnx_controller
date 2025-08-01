@@ -11,8 +11,8 @@
 #include "unitree_go/msg/low_state.hpp"
 
 constexpr size_t kDimDOF = 12;
-constexpr size_t kDimObs = 53;
-constexpr size_t kHistory = 1;
+constexpr size_t kDimObs = 28;
+constexpr size_t kHistory = 4;
 constexpr float kActionLimit = 1000; // Clip the actions to -+ this limit
 
 class ONNXController : public rclcpp::Node

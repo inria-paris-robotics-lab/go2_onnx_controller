@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 std::string get_model_path()
 {
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
-  std::string model_path = package_share_dir + "/data/standing.onnx";
+  std::string model_path = package_share_dir + "/data/go2_standing_buffer.onnx";
 
   return model_path;
 }
@@ -112,7 +112,7 @@ void ONNXController::print_vecs()
     std::cout << std::fixed << std::setprecision(4) << foot_forces_[i] << (i < foot_forces_.size() - 1 ? ", " : "");
   std::cout << "]" << std::endl;
 
-  std::cout << "-------------------------------" << std::endl;
+
 
   std::cout << "kp: " << kp_ << std::endl;
   std::cout << "kd: " << kd_ << std::endl;
@@ -160,21 +160,24 @@ void ONNXController::publish()
   std::array<double, 4> xyzw_quat_{quaternion_.x(), quaternion_.y(), quaternion_.z(), quaternion_.w()};
 
   // Prepare the buffers
-  populate_buffer(quaternion_hist, xyzw_quat_);
-  populate_buffer(gravity_b_hist_, gb_map);
-  populate_buffer(base_ang_vel_hist_, base_ang_vel_);
+  // populate_buffer(quaternion_hist, xyzw_quat_);
+  // populate_buffer(gravity_b_hist_, gb_map);
+  // populate_buffer(base_ang_vel_hist_, base_ang_vel_);
   // populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
-  populate_buffer(vel_cmd_hist_, vel_cmd_);
+  // populate_buffer(vel_cmd_hist_, vel_cmd_);
   populate_buffer(q_hist_, q_);
-  populate_buffer(dq_hist_, dq_);
+  // populate_buffer(dq_hist_, dq_);
   populate_buffer(action_hist_, action_);
   populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
-  populate_buffer(
-    observation_, xyzw_quat_, q_,
-    /*imu_lin_acc_hist_,*/ base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_, foot_forces_);
+  // populate_buffer(
+  //   // observation_, xyzw_quat_, q_,
+  //   /*imu_lin_acc_hist_,*/ base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_, foot_forces_);
 
+  populate_buffer(
+    observation_, q_hist_, action_hist_, foot_forces_hist_);
+  
   // Run the ONNX model (writes to action_)
   actor_->act();
 
