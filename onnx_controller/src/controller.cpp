@@ -12,7 +12,7 @@ using namespace std::chrono_literals;
 std::string get_model_path()
 {
   std::string package_share_dir = ament_index_cpp::get_package_share_directory("onnx_inference");
-  std::string model_path = package_share_dir + "/data/go2_standing_buffer.onnx";
+  std::string model_path = package_share_dir + "/data/2025-08-06_16-06-22.onnx";
 
   return model_path;
 }
@@ -25,8 +25,12 @@ ONNXController::ONNXController()
   actor_ = std::make_unique<ONNXActor>(get_model_path(), observation_, action_),
   // Set up the robot interface
     robot_interface_ = std::make_unique<Go2RobotInterface>(*this, simple_joint_names_);
+
   state_subscription_ = this->create_subscription<unitree_go::msg::LowState>(
     "/lowstate", 10, std::bind(&ONNXController::lowstate_cb_, this, std::placeholders::_1));
+
+  odom_subscription_ = this->create_subscription<nav_msgs::msg::Odometry>(
+    "/odometry/filtered", 10, std::bind(&ONNXController::odom_cb_, this, std::placeholders::_1));    
 
   obs_act_publisher_ = this->create_publisher<onnx_interfaces::msg::ObservationAction>("/observation_action", 10);
 
@@ -87,6 +91,11 @@ void ONNXController::print_vecs()
     std::cout << std::fixed << std::setprecision(4) << dq_[i] << (i < dq_.size() - 1 ? ", " : "");
   std::cout << "]" << std::endl;
 
+  std::cout << "base_lin_vel:            [";
+  for (size_t i = 0; i < base_lin_vel_.size(); i++)
+    std::cout << std::fixed << std::setprecision(4) << base_lin_vel_[i] << (i < base_lin_vel_.size() - 1 ? ", " : "");
+  std::cout << "]" << std::endl;
+
   std::cout << "base_ang_vel:            [";
   for (size_t i = 0; i < base_ang_vel_.size(); i++)
     std::cout << std::fixed << std::setprecision(4) << base_ang_vel_[i] << (i < base_ang_vel_.size() - 1 ? ", " : "");
@@ -141,8 +150,8 @@ void ONNXController::publish()
   {
     // Ingest commanded velocity
     vel_cmd_[0] = joy_->axes[1];
-    vel_cmd_[1] = pow(joy_->axes[0], 2) * ((joy_->axes[0] > 0) ? 1 : -1) * 0.8;
-    vel_cmd_[2] = joy_->axes[3] * joy_->axes[1];
+    // vel_cmd_[1] = pow(joy_->axes[0], 2) * ((joy_->axes[0] > 0) ? 1 : -1) * 0.8;
+    // vel_cmd_[2] = joy_->axes[3] * joy_->axes[1];
   }
 
   // Project the gravity into base frame
@@ -161,14 +170,15 @@ void ONNXController::publish()
 
   // Prepare the buffers
   // populate_buffer(quaternion_hist, xyzw_quat_);
-  // populate_buffer(gravity_b_hist_, gb_map);
+  // populate_buffer(gravity_b_hist_, gravity_b_);
+  // populate_buffer(base_lin_vel_hist_, base_lin_vel_);
   // populate_buffer(base_ang_vel_hist_, base_ang_vel_);
   // populate_buffer(imu_lin_acc_hist_, imu_lin_acc_);
   // populate_buffer(vel_cmd_hist_, vel_cmd_);
-  populate_buffer(q_hist_, q_);
+  // populate_buffer(q_hist_, q_);
   // populate_buffer(dq_hist_, dq_);
-  populate_buffer(action_hist_, action_);
-  populate_buffer(foot_forces_hist_, foot_forces_);
+  // populate_buffer(action_hist_, action_);
+  // populate_buffer(foot_forces_hist_, foot_forces_);
 
   // Push all buffers into history
   // populate_buffer(
@@ -176,7 +186,7 @@ void ONNXController::publish()
   //   /*imu_lin_acc_hist_,*/ base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_, foot_forces_);
 
   populate_buffer(
-    observation_, q_hist_, action_hist_, foot_forces_hist_);
+    observation_, q_, base_lin_vel_, base_ang_vel_, dq_, action_, gravity_b_, vel_cmd_);
   
   // Run the ONNX model (writes to action_)
   actor_->act();

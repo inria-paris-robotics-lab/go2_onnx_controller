@@ -10,6 +10,7 @@ find_package(Eigen3 REQUIRED)
 find_package(onnx_interfaces REQUIRED)
 find_package(onnx_inference REQUIRED)
 find_package(go2_control_interface REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 # C++ standard and compiler options
 set(CMAKE_CXX_STANDARD 20)
@@ -58,7 +59,9 @@ ament_target_dependencies(controller
   rclcpp
   unitree_go
   sensor_msgs
+  nav_msgs
   onnx_interfaces
+
 )
 
 # Install target

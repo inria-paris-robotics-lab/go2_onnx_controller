@@ -21,7 +21,7 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 {
-                    'simulator': "pybullet",
+                    'simulator': "simple",
                 }
             ]
         ),

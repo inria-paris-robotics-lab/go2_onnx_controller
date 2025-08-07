@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -9,10 +10,11 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/joy.hpp"
 #include "unitree_go/msg/low_state.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 
 constexpr size_t kDimDOF = 12;
-constexpr size_t kDimObs = 28;
-constexpr size_t kHistory = 4;
+constexpr size_t kDimObs = 12+18+12+1+3;
+constexpr size_t kHistory = 1;
 constexpr float kActionLimit = 1000; // Clip the actions to -+ this limit
 
 class ONNXController : public rclcpp::Node
@@ -106,8 +108,23 @@ private:
     for (size_t i = 0; i < 3; i++)
     {
       imu_lin_acc_[i] = msg->imu_state.accelerometer[i];
-      base_ang_vel_[i] = msg->imu_state.gyroscope[i];
     }
+  }
+
+  /**
+  * @brief Read the linearfrom the EKF
+  */
+  void odom_cb_(const nav_msgs::msg::Odometry::SharedPtr msg)
+  {
+    // Process linear and angular velocities
+      base_lin_vel_[0] = msg->twist.twist.linear.x;
+      base_lin_vel_[1] = msg->twist.twist.linear.y;
+      base_lin_vel_[2] = msg->twist.twist.linear.z;
+
+      base_ang_vel_[0] = msg->twist.twist.angular.x;
+      base_ang_vel_[1] = msg->twist.twist.angular.y;
+      base_ang_vel_[2] = msg->twist.twist.angular.z;
+
   }
 
   rclcpp::TimerBase::SharedPtr timer_;                                      ///< Timer for publishing commands
@@ -127,7 +144,8 @@ private:
   std::unique_ptr<ONNXActor> actor_;                   ///< ONNXActor object
   rclcpp::Subscription<unitree_go::msg::LowState>::SharedPtr
     state_subscription_; ///< Get embeded imu & sensors via LowState
-
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr
+    odom_subscription_;    
   // Gravity vector
   static constexpr std::array<float, 3> gravity_w_{0., 0., 1.}; ///< Gravity direction in the world
   std::array<float, 3> gravity_b_{};                            ///< Gravity vector in the body frame
@@ -135,10 +153,11 @@ private:
   // Inertial state
   Eigen::Quaternion<float> quaternion_{}; ///< Orientation (w, x, y, z)
   std::array<float, 3> base_ang_vel_{};   ///< Angular velocity
+  std::array<float, 3> base_lin_vel_{};   ///< Angular velocity
   std::array<float, 3> imu_lin_acc_{};    ///< Linear acceleration
 
   // Velocity command
-  std::array<float, 3> vel_cmd_{}; ///< Velocity command
+  std::array<float, 1> vel_cmd_{}; ///< Velocity command
 
   // Proprioceptive state
   std::array<float, kDimDOF> q_{};  ///< Joint positions
@@ -154,6 +173,7 @@ private:
   // History buffers
   std::array<float, 3 * kHistory> gravity_b_hist_{};      ///< Gravity vector history
   std::array<float, 3 * kHistory> base_ang_vel_hist_{};   ///< Angular velocity history
+  std::array<float, 3 * kHistory> base_lin_vel_hist_{};   ///< Linear velocity history
   std::array<float, 3 * kHistory> imu_lin_acc_hist_{};    ///< Linear acceleration history
   std::array<float, 3 * kHistory> vel_cmd_hist_{};        ///< Velocity command history
   std::array<float, kDimDOF * kHistory> q_hist_{};        ///< Joint positions history
